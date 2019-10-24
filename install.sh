@@ -1,3 +1,2 @@
-Installing Awesome Vim from /Users/mfic/.dotfiles/vimrc
-Selected users: mfic
-Installed the Ultimate Vim configuration for user mfic successfully! Enjoy :-)
+/Users/mfic/.dotfiles/vimrc/install_awesome_parameterized.sh /Users/mfic/.dotfiles/vimrc mfic
+ln -s /Users/mfic/.dotfiles/gitconfig /Users/mfic/.gitconfig
