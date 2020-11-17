@@ -61,7 +61,7 @@ COMPLETION_WAITING_DOTS="true"
 # HIST_STAMPS="mm/dd/yyyy"
 
 # Would you like to use another custom folder than $ZSH/custom?
-# ZSH_CUSTOM=/path/to/new-custom-folder
+ZSH_CUSTOM=~/.dotfiles/zsh/custom
 
 # Which plugins would you like to load?
 # Standard plugins can be found in ~/.oh-my-zsh/plugins/*
@@ -104,7 +104,3 @@ mkcdir ()
       cd -P -- "$1"
 }
 
-alias vm="virt-manager -c 'qemu+ssh://ironman/system?socket=/var/run/libvirt/libvirt-sock'"
-alias k="kubectl"
-alias kubectl-local="export KUBECONFIG=~/.kube/config"
-alias kubectl-k8s="export KUBECONFIG=~/.kube/k8s-cluster-01"
