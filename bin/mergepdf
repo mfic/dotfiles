@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Read params
+output="$1"
+input="${@:2}"
+
+gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -dPDFSETTINGS=/prepress -sOutputFile=$output $input
+

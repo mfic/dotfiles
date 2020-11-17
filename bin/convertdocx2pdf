@@ -1,0 +1,7 @@
+#! /bin/bash
+for file in *.docx; do
+#  textutil -convert docx "$file"
+
+  # Account for the new `x` in `docx`
+  pandoc -o "${file%doc}pdf" "${file}"
+done

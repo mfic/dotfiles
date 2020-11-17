@@ -1,0 +1,34 @@
+#!/bin/bash
+
+SOURCE="/Users/mfic/OneDrive - BioAnalyt GmbH/"
+DESTINATION="/Volumes/jan quest/space"
+EXCLUDES="${SOURCE}excludes"
+EXTRAOPT="-H --info=progress2 --iconv=utf8-mac,utf-8"
+
+if [ -d "$DESTINATION" ] ; then
+        rsync -az --delete --delete-excluded   \
+        --exclude-from="$EXCLUDES" $EXTRAOPT \
+        "$SOURCE" "$DESTINATION" 
+    else
+        exit
+fi
+
+# Rückgabewert prüfen.
+# 0 = fehlerfrei,
+# 24 ist harmlos; tritt auf, wenn während der Laufzeit
+# von rsync noch (/tmp?) Dateien verändert oder gelöscht wurden.
+# Alles andere ist fatal -- siehe man (1) rsync
+if ! [ $? = 24 -o $? = 0 ] ; then
+	echo "Fatal: rsync finished $SOURCE with errors!"
+	logger "Fatal: rsync finished $SOURCE with errors!"
+fi
+
+# Verzeichnis anfassen, um Backup-Datum zu speichern
+touch "$DESTINATION"
+
+# Fertig!
+echo "Finished rsync backup from $SOURCE..."
+logger "Finished rsync backup from $SOURCE..."
+
+# Sicher ist sicher...
+sync
