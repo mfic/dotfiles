@@ -1,0 +1,3 @@
+* About my dotfiles
+    I converted my dotfiles to this approach
+    https://www.atlassian.com/git/tutorials/dotfiles
