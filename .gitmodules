@@ -1,9 +1,9 @@
-[submodule "/Users/mfic/.emacs.d"]
-	path = /Users/mfic/.emacs.d
+[submodule ".emacs.d"]
+	path = .emacs.d
 	url = https://github.com/hlissner/doom-emacs.git
-[submodule "/Users/mfic/.vim_runtime"]
-	path = /Users/mfic/.vim_runtime
+[submodule ".vim_runtime"]
+	path = .vim_runtime
 	url = https://github.com/amix/vimrc.git
-[submodule "/Users/mfic/.oh-my-zsh"]
-	path = /Users/mfic/.oh-my-zsh
+[submodule ".oh-my-zsh"]
+	path = .oh-my-zsh
 	url = https://github.com/ohmyzsh/ohmyzsh.git
