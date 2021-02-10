@@ -1,3 +1,30 @@
 * About my dotfiles
-    I converted my dotfiles to this approach
-    https://www.atlassian.com/git/tutorials/dotfiles
+I converted my dotfiles to this approach
+https://www.atlassian.com/git/tutorials/dotfiles
+
+1. Clone the repo into bare
+#+BEGIN_SRC bash
+git clone --bare git@github.com:mfic/dotfiles.git $HOME/.cfg
+#+END_SRC
+
+2. Define alias in current shell
+#+BEGIN_SRC bash
+alias config='/usr/bin/git --git-dir=$HOME/.cfg/ --work-tree=$HOME'
+#+END_SRC
+
+2.1. Create a backup of current dotfiles
+#+BEGIN_SRC bash
+mkdir -p .config-backup && \
+config checkout 2>&1 | egrep "\s+\." | awk {'print $1'} | \
+xargs -I{} mv {} .config-backup/{}
+#+END_SRC
+
+3. Checkout the actual content
+#+BEGIN_SRC bash
+config checkout
+#+END_SRC
+
+4. Set the flag showUntrackedFiles to no on this specific (local) repository
+#+BEGIN_SRC bash
+config config --local status.showUntrackedFiles no
+#+END_SRC
