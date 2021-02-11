@@ -2,6 +2,15 @@
 #+AUTHOR: Jan Quest (MFIC)
 #+DESCRIPTION: My personal Doom Emacs config.
 #+STARTUP: showeverything
+#+CREDITS: [[https://gitlab.com/dwt1/dotfiles/-/blob/master/.doom.d/config.org][Derek Taylor]]
+
+* Tabel of content :toc:
+- [[#user-information][User information]]
+- [[#fonts][Fonts]]
+- [[#theme][Theme]]
+- [[#org-mode][Org-mode]]
+- [[#line-settings][Line settings]]
+- [[#splits][Splits]]
 
 * User information
 #+BEGIN_SRC emacs-lisp
@@ -97,4 +106,19 @@ This determines the style of line numbers in effect. If set to `nil', line
 numbers are disabled. For relative line numbers, set this to `relative'.
 #+BEGIN_SRC emacs-lisp
 (setq display-line-numbers-type t)
+(map! :leader
+      :desc "Toggle truncate lines"
+      "t t" #'toggle-truncate-lines)
+#+END_SRC
+
+* Splits
+I set splits to default to opening on the right using ‘prefer-horizontal-split’.  I set a keybinding for ‘clone-indirect-buffer-other-window’ for when I want to have the same document in two splits.  The text of the indirect buffer is always identical to the text of its base buffer; changes made by editing either one are visible immediately in the other.  But in all other respects, the indirect buffer and its base buffer are completely separate.  For example, I can fold one split but other will be unfolded.
+#+BEGIN_SRC emacs-lisp
+(defun prefer-horizontal-split ()
+  (set-variable 'split-height-threshold nil t)
+  (set-variable 'split-width-threshold 40 t)) ; make this as low as needed
+(add-hook 'markdown-mode-hook 'prefer-horizontal-split)
+(map! :leader
+      :desc "Clone indirect buffer other window"
+      "b c" #'clone-indirect-buffer-other-window)
 #+END_SRC

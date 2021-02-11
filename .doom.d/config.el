@@ -21,7 +21,7 @@
         org-journal-date-format "%B %d, %Y (%A) "
         org-journal-file-format "%Y-%m-%d.org"
         org-hide-emphasis-markers t
-        ;; ex. of org-link-abbrev-alist in action
+        ;; ex. of org-link-abbrev-alist in action TEST
         ;; [[arch-wiki:Name_of_Page][Description]]
         org-link-abbrev-alist    ; This overwrites the default Doom org-link-abbrev-list
           '(("google" . "http://www.google.com/search?q=")
@@ -60,3 +60,14 @@
   (dt/org-babel-tangle-async (buffer-file-name)))
 
 (setq display-line-numbers-type t)
+(map! :leader
+      :desc "Toggle truncate lines"
+      "t t" #'toggle-truncate-lines)
+
+(defun prefer-horizontal-split ()
+  (set-variable 'split-height-threshold nil t)
+  (set-variable 'split-width-threshold 40 t)) ; make this as low as needed
+(add-hook 'markdown-mode-hook 'prefer-horizontal-split)
+(map! :leader
+      :desc "Clone indirect buffer other window"
+      "b c" #'clone-indirect-buffer-other-window)
