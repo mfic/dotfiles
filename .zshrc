@@ -119,7 +119,6 @@ fi
 # Example aliases
 alias zshconfig="vi ~/.zshrc"
 alias ohmyzsh="vi ~/.oh-my-zsh"
-alias config='/usr/bin/git --git-dir=$HOME/.cfg/ --work-tree=$HOME'
 
 # Use vim bindings in zsh
 
