@@ -5,7 +5,7 @@
 [core]
 	editor = vim
 	whitespace = fix,-indent-with-non-tab,trailing-space,cr-at-eol
-	autocrlf = true
+	autocrlf = input
 [push]
 	default = matching
 [color]
