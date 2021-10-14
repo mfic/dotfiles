@@ -26,3 +26,5 @@
 	untracked = red bold
 [init]
 	defaultBranch = main
+[pull]
+	rebase = false
