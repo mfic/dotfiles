@@ -85,7 +85,7 @@ plugins=(
     ng
     node
     npm
-    osx
+    macos
     please
     sudo
     tmux
