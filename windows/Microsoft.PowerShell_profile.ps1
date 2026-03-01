@@ -24,4 +24,3 @@ function la { Get-ChildItem -Force -Hidden @args }
 
 # Convenience
 Set-Alias -Name vi -Value vim -ErrorAction SilentlyContinue
-Set-Alias -Name cls -Value Clear-Host
