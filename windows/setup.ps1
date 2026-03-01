@@ -59,20 +59,25 @@ if (Test-Path $WtSettingsPath) {
     Write-Host "Set FiraCode Nerd Font as default in Windows Terminal" -ForegroundColor Green
 }
 
-# Create PowerShell profile directory if needed
-$ProfileDir = Split-Path -Parent $PROFILE
-if (-not (Test-Path $ProfileDir)) {
-    New-Item -ItemType Directory -Path $ProfileDir -Force | Out-Null
-}
-
-# Link PowerShell profile
+# Link PowerShell profile for both PS 5 and PS 7
 $ProfileSource = Join-Path $DotfilesDir "Microsoft.PowerShell_profile.ps1"
-if (Test-Path $PROFILE) {
-    $Backup = "$PROFILE.bak.$(Get-Date -Format 'yyyyMMddHHmmss')"
-    Write-Host "Backing up existing profile to $Backup" -ForegroundColor Yellow
-    Move-Item $PROFILE $Backup
+$ProfilePaths = @(
+    Join-Path $env:USERPROFILE "Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1"
+    Join-Path $env:USERPROFILE "Documents\PowerShell\Microsoft.PowerShell_profile.ps1"
+)
+foreach ($ProfilePath in $ProfilePaths) {
+    $ProfileDir = Split-Path -Parent $ProfilePath
+    if (-not (Test-Path $ProfileDir)) {
+        New-Item -ItemType Directory -Path $ProfileDir -Force | Out-Null
+    }
+    if (Test-Path $ProfilePath) {
+        $Backup = "$ProfilePath.bak.$(Get-Date -Format 'yyyyMMddHHmmss')"
+        Write-Host "Backing up existing profile to $Backup" -ForegroundColor Yellow
+        Move-Item $ProfilePath $Backup
+    }
+    $Label = "PowerShell profile ($(Split-Path -Leaf (Split-Path -Parent $ProfilePath)))"
+    Link-File -Source $ProfileSource -Destination $ProfilePath -Label $Label
 }
-Link-File -Source $ProfileSource -Destination $PROFILE -Label "PowerShell profile"
 
 # Vim config
 $VimrcSource = Join-Path (Split-Path $DotfilesDir) "vim\vimrc"
