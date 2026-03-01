@@ -55,7 +55,58 @@ info "Setting up shared configuration..."
 link_file "$DOTFILES_DIR/shell/bashrc" "$HOME/.bashrc"
 link_file "$DOTFILES_DIR/shell/bash_profile" "$HOME/.bash_profile"
 link_file "$DOTFILES_DIR/vim/vimrc" "$HOME/.vimrc"
-link_file "$DOTFILES_DIR/git/gitconfig" "$HOME/.gitconfig"
+
+# Git config — generate ~/.gitconfig with include + user identity
+setup_git() {
+    echo ""
+    info "Setting up git configuration..."
+
+    local current_name current_email
+    current_name="$(git config --global user.name 2>/dev/null || true)"
+    current_email="$(git config --global user.email 2>/dev/null || true)"
+
+    local git_name git_email
+
+    if [ -n "$current_name" ]; then
+        read -rp "Git user name [$current_name]: " git_name
+        git_name="${git_name:-$current_name}"
+    else
+        read -rp "Git user name: " git_name
+        while [ -z "$git_name" ]; do
+            read -rp "Git user name (required): " git_name
+        done
+    fi
+
+    if [ -n "$current_email" ]; then
+        read -rp "Git user email [$current_email]: " git_email
+        git_email="${git_email:-$current_email}"
+    else
+        read -rp "Git user email: " git_email
+        while [ -z "$git_email" ]; do
+            read -rp "Git user email (required): " git_email
+        done
+    fi
+
+    # Back up existing gitconfig
+    if [ -L "$HOME/.gitconfig" ]; then
+        rm -f "$HOME/.gitconfig"
+    elif [ -e "$HOME/.gitconfig" ]; then
+        warn "Backing up $HOME/.gitconfig -> $HOME/.gitconfig.bak"
+        mv "$HOME/.gitconfig" "$HOME/.gitconfig.bak"
+    fi
+
+    # Generate ~/.gitconfig with include and user block
+    cat > "$HOME/.gitconfig" <<GITEOF
+[include]
+    path = $DOTFILES_DIR/git/gitconfig
+[user]
+    name = $git_name
+    email = $git_email
+GITEOF
+
+    ok "Git configured as: $git_name <$git_email>"
+}
+setup_git
 
 # Neovim
 mkdir -p "$HOME/.config/nvim"
@@ -146,5 +197,3 @@ echo ""
 ok "Dotfiles setup complete ($PROFILE profile)"
 echo ""
 info "Per-machine overrides: create ~/.local_profile"
-info "Git user config: git config --global user.name 'Your Name'"
-info "                 git config --global user.email 'you@example.com'"

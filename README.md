@@ -35,7 +35,7 @@ cd $env:USERPROFILE\.dotfiles\windows
 | `~/.bash_profile` | `shell/bash_profile` |
 | `~/.vimrc` | `vim/vimrc` |
 | `~/.config/nvim/init.vim` | `nvim/init.vim` |
-| `~/.gitconfig` | `git/gitconfig` |
+| `~/.gitconfig` | generated (includes `git/gitconfig` + user identity) |
 | `~/.tmux.conf` | `tmux/tmux.conf` |
 | `~/bin/*` | `bin/*` (utility scripts) |
 
@@ -100,12 +100,11 @@ Both `bashrc` and `zshrc` source this file automatically.
 
 ## Git user config
 
-The gitconfig intentionally has no `[user]` block. Set your identity per-machine:
+`install.sh` prompts for your name and email during setup. It generates a `~/.gitconfig` that:
+1. Includes the shared config from `git/gitconfig` (aliases, colors, defaults)
+2. Sets your `[user]` block per-machine
 
-```bash
-git config --global user.name "Your Name"
-git config --global user.email "you@example.com"
-```
+On re-run, it shows the current values as defaults — just press Enter to keep them.
 
 ## Using with Ansible
 
