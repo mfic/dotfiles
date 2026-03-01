@@ -141,6 +141,45 @@ if (Test-Path $GitConfigDest) {
 "@ | Set-Content $GitConfigDest -Encoding UTF8
 Write-Host "Git configured as: $GitName <$GitEmail>" -ForegroundColor Green
 
+# Install vim-plug for vim
+Write-Host ""
+Write-Host "Setting up vim-plug..." -ForegroundColor Cyan
+$VimPlugDest = Join-Path $env:USERPROFILE "vimfiles\autoload\plug.vim"
+if (-not (Test-Path $VimPlugDest)) {
+    $VimPlugDir = Split-Path -Parent $VimPlugDest
+    if (-not (Test-Path $VimPlugDir)) {
+        New-Item -ItemType Directory -Path $VimPlugDir -Force | Out-Null
+    }
+    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim" -OutFile $VimPlugDest
+    Write-Host "vim-plug installed for vim" -ForegroundColor Green
+} else {
+    Write-Host "vim-plug already installed for vim" -ForegroundColor Green
+}
+
+# Install vim-plug for neovim
+$NvimPlugDest = Join-Path $env:LOCALAPPDATA "nvim-data\site\autoload\plug.vim"
+if (-not (Test-Path $NvimPlugDest)) {
+    $NvimPlugDir = Split-Path -Parent $NvimPlugDest
+    if (-not (Test-Path $NvimPlugDir)) {
+        New-Item -ItemType Directory -Path $NvimPlugDir -Force | Out-Null
+    }
+    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim" -OutFile $NvimPlugDest
+    Write-Host "vim-plug installed for neovim" -ForegroundColor Green
+} else {
+    Write-Host "vim-plug already installed for neovim" -ForegroundColor Green
+}
+
+# Install vim plugins headless
+Write-Host "Installing vim plugins..." -ForegroundColor Cyan
+if (Get-Command vim -ErrorAction SilentlyContinue) {
+    vim +PlugInstall +qall 2>$null
+    Write-Host "Vim plugins installed" -ForegroundColor Green
+}
+if (Get-Command nvim -ErrorAction SilentlyContinue) {
+    nvim +PlugInstall +qall 2>$null
+    Write-Host "Neovim plugins installed" -ForegroundColor Green
+}
+
 Write-Host ""
 Write-Host "Setup complete!" -ForegroundColor Green
 
