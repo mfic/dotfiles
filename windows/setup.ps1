@@ -39,6 +39,26 @@ if (-not (Get-Command oh-my-posh -ErrorAction SilentlyContinue)) {
     Write-Host "oh-my-posh installed. You may need to restart your terminal." -ForegroundColor Green
 }
 
+# Install FiraCode Nerd Font
+if (Get-Command oh-my-posh -ErrorAction SilentlyContinue) {
+    Write-Host "Installing FiraCode Nerd Font..." -ForegroundColor Yellow
+    oh-my-posh font install FiraCode
+    Write-Host "FiraCode Nerd Font installed" -ForegroundColor Green
+}
+
+# Set FiraCode Nerd Font as default in Windows Terminal
+$WtSettingsPath = Join-Path $env:LOCALAPPDATA "Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json"
+if (Test-Path $WtSettingsPath) {
+    $WtSettings = Get-Content $WtSettingsPath -Raw | ConvertFrom-Json
+    if (-not $WtSettings.profiles.defaults) {
+        $WtSettings.profiles | Add-Member -NotePropertyName "defaults" -NotePropertyValue @{} -Force
+    }
+    $FontObj = [PSCustomObject]@{ face = "FiraCode Nerd Font" }
+    $WtSettings.profiles.defaults | Add-Member -NotePropertyName "font" -NotePropertyValue $FontObj -Force
+    $WtSettings | ConvertTo-Json -Depth 10 | Set-Content $WtSettingsPath -Encoding UTF8
+    Write-Host "Set FiraCode Nerd Font as default in Windows Terminal" -ForegroundColor Green
+}
+
 # Create PowerShell profile directory if needed
 $ProfileDir = Split-Path -Parent $PROFILE
 if (-not (Test-Path $ProfileDir)) {
@@ -84,8 +104,3 @@ if ($script:UsedCopy) {
     Write-Host "Tip: Enable Developer Mode in Windows Settings > System > For developers" -ForegroundColor Cyan
     Write-Host "     to allow symlinks without admin. Then re-run this script." -ForegroundColor Cyan
 }
-
-Write-Host ""
-Write-Host "Recommended: Install a Nerd Font for oh-my-posh icons:" -ForegroundColor Cyan
-Write-Host "  oh-my-posh font install" -ForegroundColor White
-Write-Host "  Then set it as your terminal font in Windows Terminal settings." -ForegroundColor White
