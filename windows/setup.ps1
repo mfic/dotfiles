@@ -132,11 +132,12 @@ if (Test-Path $GitConfigDest) {
     Move-Item $GitConfigDest $Backup
 }
 
+$GitConfigSourceUnix = $GitConfigSource -replace '\\', '/'
 @"
 [include]
-    path = $GitConfigSource
+    path = $GitConfigSourceUnix
 [user]
-    name = $GitName
+    name = "$GitName"
     email = $GitEmail
 "@ | Set-Content $GitConfigDest -Encoding UTF8
 Write-Host "Git configured as: $GitName <$GitEmail>" -ForegroundColor Green
