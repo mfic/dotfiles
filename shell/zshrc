@@ -1,0 +1,64 @@
+#!/usr/bin/env zsh
+# Zsh configuration with Oh My Zsh
+
+# Path
+export PATH="$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
+
+# Oh My Zsh
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME="robbyrussell"
+CASE_SENSITIVE="true"
+ENABLE_CORRECTION="true"
+COMPLETION_WAITING_DOTS="true"
+DISABLE_UPDATE_PROMPT="true"
+
+# Plugins
+plugins=(
+    ansible
+    docker
+    docker-compose
+    extract
+    git
+    helm
+    kubectl
+    sudo
+    tmux
+    zsh-autosuggestions
+    zsh-syntax-highlighting
+)
+
+# Load Oh My Zsh (if installed)
+[ -f "$ZSH/oh-my-zsh.sh" ] && source "$ZSH/oh-my-zsh.sh"
+
+# Source shared dotfiles
+for f in "$HOME/.dotfiles/shell/exports.sh" "$HOME/.dotfiles/shell/aliases.sh" "$HOME/.dotfiles/shell/functions.sh"; do
+    [ -f "$f" ] && source "$f"
+done
+
+# Zsh-specific settings
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_SPACE
+setopt APPEND_HISTORY
+setopt SHARE_HISTORY
+setopt AUTO_CD
+setopt CORRECT
+
+# Vi keybindings
+set -o vi
+
+# Kubernetes config merging
+# Default kubeconfig
+DEFAULT_KUBE_CONTEXTS="$HOME/.kube/config"
+if [ -f "$DEFAULT_KUBE_CONTEXTS" ]; then
+    export KUBECONFIG="$DEFAULT_KUBE_CONTEXTS"
+fi
+# Merge additional contexts from ~/.kube/k8s/*.yml
+CUSTOM_KUBE_CONTEXTS="$HOME/.kube/k8s"
+if [ -d "$CUSTOM_KUBE_CONTEXTS" ]; then
+    for contextFile in "$CUSTOM_KUBE_CONTEXTS"/*.yml; do
+        [ -f "$contextFile" ] && export KUBECONFIG="$contextFile:$KUBECONFIG"
+    done
+fi
+
+# Source per-machine overrides
+[ -f ~/.local_profile ] && source ~/.local_profile

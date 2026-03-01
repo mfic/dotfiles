@@ -1,0 +1,6 @@
+#!/bin/bash
+# Convert all DOCX files in current directory to PDF using pandoc
+for file in *.docx; do
+    [ -f "$file" ] || continue
+    pandoc -o "${file%.docx}.pdf" "${file}"
+done

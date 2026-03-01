@@ -1,0 +1,62 @@
+" vim configuration
+" Works with both vim and neovim (neovim sources this via init.vim)
+
+" Plugin manager: vim-plug (auto-install)
+let data_dir = has('nvim') ? stdpath('data') . '/site' : '~/.vim'
+if empty(glob(data_dir . '/autoload/plug.vim'))
+    silent execute '!curl -fLo ' . data_dir . '/autoload/plug.vim --create-dirs
+        \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+    autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
+endif
+
+call plug#begin()
+Plug 'preservim/nerdtree'
+Plug 'vim-airline/vim-airline'
+Plug 'tpope/vim-sensible'
+call plug#end()
+
+" Display
+set number
+set relativenumber
+syntax on
+set cursorline
+set showmatch
+set laststatus=2
+
+" Indentation
+set tabstop=4
+set shiftwidth=4
+set expandtab
+set autoindent
+set smartindent
+
+" Search
+set incsearch
+set hlsearch
+set ignorecase
+set smartcase
+
+" Usability
+set mouse=a
+set clipboard=unnamedplus
+set wildmenu
+set wildmode=longest:full,full
+set scrolloff=8
+set signcolumn=yes
+set hidden
+set nobackup
+set nowritebackup
+set noswapfile
+set updatetime=300
+
+" NERDTree
+nnoremap <C-n> :NERDTreeToggle<CR>
+" Close vim if NERDTree is the only window remaining
+autocmd BufEnter * if tabpagenr('$') == 1 && winnr('$') == 1
+    \ && exists('b:NERDTree') && b:NERDTree.isTabTree() | quit | endif
+
+" Clear search highlight with Escape
+nnoremap <Esc> :nohlsearch<CR>
+
+" Quick escape from insert mode
+inoremap jj <Esc>

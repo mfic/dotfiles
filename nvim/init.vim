@@ -1,0 +1,4 @@
+" Neovim configuration — sources shared vimrc
+set runtimepath^=~/.vim runtimepath+=~/.vim/after
+let &packpath = &runtimepath
+source ~/.dotfiles/vim/vimrc
