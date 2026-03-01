@@ -31,6 +31,7 @@ function Link-File {
     }
 }
 $script:UsedCopy = $false
+$script:Backups = @()
 
 # Install oh-my-posh if not present
 if (-not (Get-Command oh-my-posh -ErrorAction SilentlyContinue)) {
@@ -74,6 +75,7 @@ foreach ($ProfilePath in $ProfilePaths) {
         $Backup = "$ProfilePath.bak.$(Get-Date -Format 'yyyyMMddHHmmss')"
         Write-Host "Backing up existing profile to $Backup" -ForegroundColor Yellow
         Move-Item $ProfilePath $Backup
+        $script:Backups += $Backup
     }
     $Label = "PowerShell profile ($(Split-Path -Leaf (Split-Path -Parent $ProfilePath)))"
     Link-File -Source $ProfileSource -Destination $ProfilePath -Label $Label
@@ -85,6 +87,7 @@ $VimrcDest = Join-Path $env:USERPROFILE "_vimrc"
 if (Test-Path $VimrcDest) {
     $Backup = "$VimrcDest.bak.$(Get-Date -Format 'yyyyMMddHHmmss')"
     Move-Item $VimrcDest $Backup
+    $script:Backups += $Backup
 }
 Link-File -Source $VimrcSource -Destination $VimrcDest -Label "_vimrc"
 
@@ -98,6 +101,7 @@ $NvimDest = Join-Path $NvimDir "init.vim"
 if (Test-Path $NvimDest) {
     $Backup = "$NvimDest.bak.$(Get-Date -Format 'yyyyMMddHHmmss')"
     Move-Item $NvimDest $Backup
+    $script:Backups += $Backup
 }
 Link-File -Source $NvimSource -Destination $NvimDest -Label "nvim/init.vim"
 
@@ -130,6 +134,7 @@ if (Test-Path $GitConfigDest) {
     $Backup = "$GitConfigDest.bak.$(Get-Date -Format 'yyyyMMddHHmmss')"
     Write-Host "Backing up existing .gitconfig to $Backup" -ForegroundColor Yellow
     Move-Item $GitConfigDest $Backup
+    $script:Backups += $Backup
 }
 
 $GitConfigSourceUnix = $GitConfigSource -replace '\\', '/'
@@ -183,6 +188,22 @@ if (Get-Command nvim -ErrorAction SilentlyContinue) {
 
 Write-Host ""
 Write-Host "Setup complete!" -ForegroundColor Green
+
+# Offer to clean up backup files
+if ($script:Backups.Count -gt 0) {
+    Write-Host ""
+    Write-Host "The following backup files were created:" -ForegroundColor Yellow
+    foreach ($b in $script:Backups) {
+        Write-Host "  $b" -ForegroundColor Yellow
+    }
+    $Answer = Read-Host "Delete backup files? [y/N]"
+    if ($Answer -eq 'y' -or $Answer -eq 'Y') {
+        foreach ($b in $script:Backups) {
+            Remove-Item -Path $b -Force
+        }
+        Write-Host "Backup files deleted" -ForegroundColor Green
+    }
+}
 
 if ($script:UsedCopy) {
     Write-Host ""
