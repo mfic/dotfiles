@@ -6,6 +6,14 @@ $DotfilesDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 Write-Host "Setting up dotfiles on Windows..." -ForegroundColor Cyan
 
+# Ensure scripts can run (RemoteSigned allows local scripts, blocks unsigned downloads)
+$Policy = Get-ExecutionPolicy -Scope CurrentUser
+if ($Policy -eq "Restricted" -or $Policy -eq "Undefined") {
+    Write-Host "Setting execution policy to RemoteSigned for current user..." -ForegroundColor Yellow
+    Set-ExecutionPolicy -Scope CurrentUser RemoteSigned -Force
+    Write-Host "Execution policy set to RemoteSigned" -ForegroundColor Green
+}
+
 # Symlink helper — falls back to copy if not running as admin / Developer Mode off
 function Link-File {
     param(
