@@ -2,7 +2,16 @@
 
 # oh-my-posh prompt (robbyrussell theme to match zsh)
 if (Get-Command oh-my-posh -ErrorAction SilentlyContinue) {
-    oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH\robbyrussell.omp.json" | Invoke-Expression
+    $ThemesPath = $env:POSH_THEMES_PATH
+    if (-not $ThemesPath) {
+        $ThemesPath = Join-Path (Split-Path (Get-Command oh-my-posh).Source) "themes"
+    }
+    $ThemeFile = Join-Path $ThemesPath "robbyrussell.omp.json"
+    if (Test-Path $ThemeFile) {
+        oh-my-posh init pwsh --config $ThemeFile | Invoke-Expression
+    } else {
+        oh-my-posh init pwsh | Invoke-Expression
+    }
 }
 
 # Docker aliases
