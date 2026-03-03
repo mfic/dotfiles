@@ -11,6 +11,7 @@ CASE_SENSITIVE="true"
 ENABLE_CORRECTION="true"
 COMPLETION_WAITING_DOTS="true"
 DISABLE_UPDATE_PROMPT="true"
+COLORTERM=truecolor
 
 # Plugins
 plugins=(
