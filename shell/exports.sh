@@ -2,7 +2,7 @@
 # Shared environment variables — sourced by both bash and zsh
 
 # Path
-export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
+export PATH="$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 
 # Editor
 export EDITOR=vim
