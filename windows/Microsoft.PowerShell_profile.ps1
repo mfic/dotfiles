@@ -9,7 +9,8 @@ if (Get-Command oh-my-posh -ErrorAction SilentlyContinue) {
     $ThemeFile = Join-Path $ThemesPath "robbyrussell.omp.json"
     if (Test-Path $ThemeFile) {
         oh-my-posh init pwsh --config $ThemeFile | Invoke-Expression
-    } else {
+    }
+    else {
         oh-my-posh init pwsh | Invoke-Expression
     }
 }
@@ -33,3 +34,40 @@ function la { Get-ChildItem -Force -Hidden @args }
 
 # Convenience
 Set-Alias -Name vi -Value vim -ErrorAction SilentlyContinue
+
+# Helper functions to run Docker containers
+function Run-Ollama {
+    $exists = docker ps -a --format '{{.Names}}' | Select-String -SimpleMatch 'ollama'
+
+    if ($exists) {
+        docker start ollama | Out-Null
+    }
+    else {
+        docker run -d `
+            --name ollama `
+            --restart unless-stopped `
+            -v ollama:/root/.ollama `
+            -p 127.0.0.1:11434:11434 `
+            ollama/ollama | Out-Null
+    }
+}
+## Ollama CLI Helper
+function ollama {
+    docker start ollama | Out-Null 2>$null
+    docker exec -it ollama ollama @args
+}
+
+function Run-ItTools {
+    $exists = docker ps -a --format '{{.Names}}' | Select-String -SimpleMatch 'it-tools'
+
+    if ($exists) {
+        docker start it-tools | Out-Null
+    }
+    else {
+        docker run -d `
+            --name it-tools `
+            --restart unless-stopped `
+            -p 127.0.0.1:8080:80 `
+            corentinth/it-tools:latest | Out-Null
+    }
+}

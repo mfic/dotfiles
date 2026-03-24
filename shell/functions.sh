@@ -131,3 +131,34 @@ encodeb64() {
         echo -n "$encoded" | xclip -selection clipboard
     fi
 }
+
+# Helper functions to run Docker containers
+run-ollama() {
+  if docker ps -a --format '{{.Names}}' | grep -Fxq ollama; then
+    docker start ollama >/dev/null
+  else
+    docker run -d \
+      --name ollama \
+      --restart unless-stopped \
+      -v ollama:/root/.ollama \
+      -p 127.0.0.1:11434:11434 \
+      ollama/ollama >/dev/null
+  fi
+}
+## Ollama CLI helper
+ollama() {
+  docker start ollama >/dev/null 2>&1
+  docker exec -it ollama ollama "$@"
+}
+
+run-it-tools() {
+  if docker ps -a --format '{{.Names}}' | grep -Fxq it-tools; then
+    docker start it-tools >/dev/null
+  else
+    docker run -d \
+      --name it-tools \
+      --restart unless-stopped \
+      -p 127.0.0.1:8080:80 \
+      corentinth/it-tools:latest >/dev/null
+  fi
+}
