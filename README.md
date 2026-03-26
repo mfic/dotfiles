@@ -168,31 +168,69 @@ Before overwriting any existing config file, a timestamped backup is created:
 
 At the end of install you are offered the option to delete them. At any time, run `dfclean` (Linux) or `dfclean` (Windows PowerShell) to clean up all backup files.
 
-## Docker helpers
+## Commands reference
 
-| Function | Description |
-|----------|-------------|
-| `run-ollama` | Start Ollama container (creates it on first run) |
-| `ollama <args>` | Run ollama CLI via Docker |
-| `run-it-tools` | Start IT-Tools container at `http://localhost:8080` |
+### Dotfiles management (both platforms)
 
-## Key aliases
+| Command | Alias | Description |
+|---------|-------|-------------|
+| `dotfiles-update [profile]` | `dfu` | Pull + re-run install (skips git prompt) |
+| `dotfiles-reload` | `dfr` | Reload shell config in the current session |
+| `dotfiles-clean-backups` | `dfclean` | Remove all `.bak.*` backup files |
 
-| Alias | Command |
-|-------|---------|
-| `dfu` | Update dotfiles |
-| `dfr` | Reload shell config |
-| `dfclean` | Clean backup files |
+### Docker (both platforms)
+
+| Command | Description |
+|---------|-------------|
 | `dc` | `docker compose` |
 | `dcu` | `docker compose up -d` |
 | `dcd` | `docker compose down` |
 | `dcl` | `docker compose logs -f` |
 | `dcdu` | down + up |
 | `dps` | `docker ps` |
-| `ll` | `ls -alF` |
-| `la` | `ls -Alh` |
+| `run-ollama` / `Run-Ollama` | Start Ollama container (creates on first run) |
+| `ollama <args>` | Run ollama CLI via Docker |
+| `run-it-tools` / `Run-ItTools` | Start IT-Tools at `http://localhost:8080` |
+
+### Navigation (both platforms)
+
+| Command | Description |
+|---------|-------------|
 | `..` | `cd ..` |
 | `...` | `cd ../..` |
+| `....` | `cd ../../..` |
+| `up <n>` | Go up `n` directories (Linux/macOS) |
+| `ll` | Long listing with hidden files |
+| `la` | Long listing, all files |
+
+### Linux-only aliases
+
+| Alias | Command |
+|-------|---------|
+| `lx` / `lk` / `lt` / `lr` | Various sorted `ls` views |
+| `rmd` | `rm -rf` |
+| `h <term>` | `history \| grep <term>` |
+| `p <term>` | `ps aux \| grep <term>` |
+| `f <term>` | `find . \| grep <term>` |
+| `mx` | `chmod a+x` |
+| `sha1` | `openssl sha1` |
+| `extract <file>` | Extract any archive format |
+| `mkdirg <dir>` | `mkdir -p` + `cd` |
+| `cpg` / `mvg` | Copy/move and `cd` to destination |
+| `encodeb64 <str>` | Base64 encode (copies to clipboard if available) |
+| `whatsmyip` | Show internal and external IP |
+| `rename-all-sequentially <prefix> <ext>` | Bulk-rename files in current dir |
+
+### Windows PowerShell functions
+
+| Function | Alias | Description |
+|----------|-------|-------------|
+| `Update-Dotfiles [profile]` | `dfu` | Pull + re-run setup (skips git prompt) |
+| `Invoke-ProfileReload` | `dfr` | `. $PROFILE` |
+| `Invoke-DotfilesCleanBackups` | `dfclean` | Remove `.bak.*` backup files |
+| `Run-Ollama` | — | Start Ollama container |
+| `Run-ItTools` | — | Start IT-Tools container |
+| `vi` | — | Alias for `vim` |
 
 ## Tmux
 
