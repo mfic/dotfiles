@@ -193,6 +193,8 @@ if command -v nvim &>/dev/null; then
     ok "Neovim plugins installed"
 fi
 
+echo "$PROFILE" > "$HOME/.dotfiles_profile"
+
 echo ""
 ok "Dotfiles setup complete ($PROFILE profile)"
 echo ""

@@ -168,9 +168,18 @@ dotfiles-update() {
         return 1
     fi
 
+    local profile
+    if [ -f "$HOME/.dotfiles_profile" ]; then
+        profile=$(cat "$HOME/.dotfiles_profile")
+        echo "[info] Using saved profile: $profile"
+    else
+        profile="server"
+        echo "[info] No saved profile found, defaulting to: $profile"
+    fi
+
     echo "[info] Updating dotfiles in $dir..."
     git -C "$dir" pull || return 1
-    bash "$dir/install.sh"
+    bash "$dir/install.sh" "$profile"
 }
 alias dfu='dotfiles-update'
 
