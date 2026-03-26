@@ -10,6 +10,8 @@ for arg in "$@"; do
     case "$arg" in
         --skip-git) SKIP_GIT=true ;;
         workstation|server) PROFILE="$arg" ;;
+        --help|-h) echo "Usage: $0 [workstation|server] [--skip-git]"; exit 0 ;;
+        *) echo "Unknown argument: $arg"; echo "Usage: $0 [workstation|server] [--skip-git]"; exit 1 ;;
     esac
 done
 
@@ -207,12 +209,18 @@ fi
 # Install vim plugins headless
 info "Installing vim plugins..."
 if command -v vim &>/dev/null; then
-    vim +PlugInstall +qall 2>/dev/null || true
-    ok "Vim plugins installed"
+    if vim +PlugInstall +qall 2>/dev/null; then
+        ok "Vim plugins installed"
+    else
+        warn "Vim plugin install may have failed — run ':PlugInstall' manually"
+    fi
 fi
 if command -v nvim &>/dev/null; then
-    nvim +PlugInstall +qall 2>/dev/null || true
-    ok "Neovim plugins installed"
+    if nvim +PlugInstall +qall 2>/dev/null; then
+        ok "Neovim plugins installed"
+    else
+        warn "Neovim plugin install may have failed — run ':PlugInstall' manually"
+    fi
 fi
 
 echo "$PROFILE" > "$HOME/.dotfiles_profile"

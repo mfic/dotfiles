@@ -96,11 +96,12 @@ function Invoke-DotfilesCleanBackups {
         $HOME,
         (Join-Path $HOME "Documents\PowerShell"),
         (Join-Path $HOME "Documents\WindowsPowerShell"),
-        (Join-Path $env:LOCALAPPDATA "nvim")
+        (Join-Path $env:LOCALAPPDATA "nvim"),
+        (Join-Path $env:LOCALAPPDATA "nvim-data\site\autoload")
     )
     foreach ($path in $searchPaths) {
         if (-not (Test-Path $path)) { continue }
-        Get-ChildItem $path -Depth 1 -Filter '*.bak.*' -ErrorAction SilentlyContinue |
+        Get-ChildItem $path -Depth 2 -Filter '*.bak.*' -ErrorAction SilentlyContinue |
             Where-Object { $_.Name -match '\.bak\.\d+$' } |
             ForEach-Object {
                 Write-Host "Removing $($_.FullName)"

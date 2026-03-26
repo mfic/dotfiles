@@ -28,7 +28,7 @@ plugins=(
 [ -f "$ZSH/oh-my-zsh.sh" ] && source "$ZSH/oh-my-zsh.sh"
 
 # Source shared dotfiles
-_df_dir="${DOTFILES:-$(dirname $(dirname $(realpath ${(%):-%x})))}"
+_df_dir="${DOTFILES:-$(dirname "$(dirname "$(realpath "${(%):-%x}")")")}"
 for f in "$_df_dir/shell/exports.sh" "$_df_dir/shell/aliases.sh" "$_df_dir/shell/functions.sh"; do
     [ -f "$f" ] && source "$f"
 done

@@ -17,14 +17,14 @@ elif [ -f /etc/bash_completion ]; then
 fi
 
 # Source shared dotfiles
-_df_dir="${DOTFILES:-$(dirname $(dirname $(realpath "${BASH_SOURCE[0]}")))}"
+_df_dir="${DOTFILES:-$(dirname "$(dirname "$(realpath "${BASH_SOURCE[0]}")")")}"
 for f in "$_df_dir/shell/exports.sh" "$_df_dir/shell/aliases.sh" "$_df_dir/shell/functions.sh"; do
     [ -f "$f" ] && . "$f"
 done
 unset _df_dir
 
 # Bash-specific settings
-if [[ $iatest > 0 ]]; then
+if [[ $iatest -gt 0 ]]; then
     bind "set bell-style visible"
     bind "set completion-ignore-case on"
     bind "set show-all-if-ambiguous On"
@@ -113,8 +113,8 @@ function __setprompt
     fi
 
     # Date
-    PS1+="\[${DARKGRAY}\](\[${CYAN}\]\$(date +%a) $(date +%b-'%-m')"
-    PS1+="${BLUE} $(date +'%-I':%M:%S%P)\[${DARKGRAY}\])-"
+    PS1+="\[${DARKGRAY}\](\[${CYAN}\]\$(date '+%a %b-%-m')"
+    PS1+="\[${BLUE}\] \$(date +'%-I:%M:%S%P')\[${DARKGRAY}\])-"
 
     # CPU
     PS1+="(\[${MAGENTA}\]CPU $(cpu)%"

@@ -78,16 +78,15 @@ mkdirg () {
 
 # Goes up a specified number of directories (i.e. up 4)
 up () {
-    local d=""
-    local limit=$1
+    if [[ -z "$1" || "$1" -lt 1 ]]; then
+        echo "Usage: up <number>" >&2
+        return 1
+    fi
+    local d="" limit=$1
     for ((i=1; i <= limit; i++)); do
         d=$d/..
     done
-    d=$(echo "$d" | sed 's/^\///')
-    if [ -z "$d" ]; then
-        d=..
-    fi
-    cd "$d"
+    cd "${d#/}"
 }
 
 # Returns the last 2 fields of the working directory

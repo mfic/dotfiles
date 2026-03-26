@@ -89,24 +89,13 @@ foreach ($ProfilePath in $ProfilePaths) {
     if (-not (Test-Path $ProfileDir)) {
         New-Item -ItemType Directory -Path $ProfileDir -Force | Out-Null
     }
-    if (Test-Path $ProfilePath) {
-        $Backup = "$ProfilePath.bak.$(Get-Date -Format 'yyyyMMddHHmmss')"
-        Write-Host "Backing up existing profile to $Backup" -ForegroundColor Yellow
-        Move-Item $ProfilePath $Backup
-        $script:Backups += $Backup
-    }
     $Label = "PowerShell profile ($(Split-Path -Leaf (Split-Path -Parent $ProfilePath)))"
     Link-File -Source $ProfileSource -Destination $ProfilePath -Label $Label
 }
 
 # Vim config
 $VimrcSource = Join-Path $RepoRoot "vim\vimrc"
-$VimrcDest = Join-Path $env:USERPROFILE "_vimrc"
-if (Test-Path $VimrcDest) {
-    $Backup = "$VimrcDest.bak.$(Get-Date -Format 'yyyyMMddHHmmss')"
-    Move-Item $VimrcDest $Backup
-    $script:Backups += $Backup
-}
+$VimrcDest   = Join-Path $env:USERPROFILE "_vimrc"
 Link-File -Source $VimrcSource -Destination $VimrcDest -Label "_vimrc"
 
 # Neovim config
@@ -115,19 +104,14 @@ if (-not (Test-Path $NvimDir)) {
     New-Item -ItemType Directory -Path $NvimDir -Force | Out-Null
 }
 $NvimSource = Join-Path $RepoRoot "nvim\init.vim"
-$NvimDest = Join-Path $NvimDir "init.vim"
-if (Test-Path $NvimDest) {
-    $Backup = "$NvimDest.bak.$(Get-Date -Format 'yyyyMMddHHmmss')"
-    Move-Item $NvimDest $Backup
-    $script:Backups += $Backup
-}
+$NvimDest   = Join-Path $NvimDir "init.vim"
 Link-File -Source $NvimSource -Destination $NvimDest -Label "nvim/init.vim"
 
 # Git config — prompt for user identity, generate .gitconfig with include
 if ($SkipGit) {
     Write-Host "[info] Skipping git configuration (-SkipGit)" -ForegroundColor Cyan
 } elseif (-not [Environment]::UserInteractive) {
-    Write-Host "[warn] Non-interactive session — skipping git setup" -ForegroundColor Yellow
+    Write-Host "[warn] Non-interactive session - skipping git setup" -ForegroundColor Yellow
 } else {
     Write-Host ""
     Write-Host "Setting up git configuration..." -ForegroundColor Cyan
@@ -154,10 +138,10 @@ if ($SkipGit) {
 
     # Write via git config to avoid injection issues with special characters in names
     $GitConfigSourceUnix = $GitConfigSource -replace '\\', '/'
-    git config --global include.path $GitConfigSourceUnix
-    git config --global user.name    $GitName
-    git config --global user.email   $GitEmail
-    Write-Host "Git configured as: $GitName <$GitEmail>" -ForegroundColor Green
+    git config --global include.path "$GitConfigSourceUnix"
+    git config --global user.name "$GitName"
+    git config --global user.email "$GitEmail"
+    Write-Host "Git configured as: $GitName ($GitEmail)" -ForegroundColor Green
 }
 
 # Install vim-plug for vim
