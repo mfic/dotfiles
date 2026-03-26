@@ -1,5 +1,9 @@
 # Windows dotfiles setup script
-# Run as: .\setup.ps1
+# Run as: .\setup.ps1 [-SkipGit]
+
+param(
+    [switch]$SkipGit
+)
 
 $ErrorActionPreference = "Stop"
 $DotfilesDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -106,46 +110,50 @@ if (Test-Path $NvimDest) {
 Link-File -Source $NvimSource -Destination $NvimDest -Label "nvim/init.vim"
 
 # Git config — prompt for user identity, generate .gitconfig with include
-Write-Host ""
-Write-Host "Setting up git configuration..." -ForegroundColor Cyan
-$GitConfigSource = Join-Path (Split-Path $DotfilesDir) "git\gitconfig"
-$GitConfigDest = Join-Path $env:USERPROFILE ".gitconfig"
-
-$CurrentName = git config --global user.name 2>$null
-$CurrentEmail = git config --global user.email 2>$null
-
-if ($CurrentName) {
-    $GitName = Read-Host "Git user name [$CurrentName]"
-    if (-not $GitName) { $GitName = $CurrentName }
+if ($SkipGit) {
+    Write-Host "[info] Skipping git configuration (-SkipGit)" -ForegroundColor Cyan
 } else {
-    $GitName = Read-Host "Git user name"
-    while (-not $GitName) { $GitName = Read-Host "Git user name (required)" }
-}
+    Write-Host ""
+    Write-Host "Setting up git configuration..." -ForegroundColor Cyan
+    $GitConfigSource = Join-Path (Split-Path $DotfilesDir) "git\gitconfig"
+    $GitConfigDest = Join-Path $env:USERPROFILE ".gitconfig"
 
-if ($CurrentEmail) {
-    $GitEmail = Read-Host "Git user email [$CurrentEmail]"
-    if (-not $GitEmail) { $GitEmail = $CurrentEmail }
-} else {
-    $GitEmail = Read-Host "Git user email"
-    while (-not $GitEmail) { $GitEmail = Read-Host "Git user email (required)" }
-}
+    $CurrentName = git config --global user.name 2>$null
+    $CurrentEmail = git config --global user.email 2>$null
 
-if (Test-Path $GitConfigDest) {
-    $Backup = "$GitConfigDest.bak.$(Get-Date -Format 'yyyyMMddHHmmss')"
-    Write-Host "Backing up existing .gitconfig to $Backup" -ForegroundColor Yellow
-    Move-Item $GitConfigDest $Backup
-    $script:Backups += $Backup
-}
+    if ($CurrentName) {
+        $GitName = Read-Host "Git user name [$CurrentName]"
+        if (-not $GitName) { $GitName = $CurrentName }
+    } else {
+        $GitName = Read-Host "Git user name"
+        while (-not $GitName) { $GitName = Read-Host "Git user name (required)" }
+    }
 
-$GitConfigSourceUnix = $GitConfigSource -replace '\\', '/'
-@"
+    if ($CurrentEmail) {
+        $GitEmail = Read-Host "Git user email [$CurrentEmail]"
+        if (-not $GitEmail) { $GitEmail = $CurrentEmail }
+    } else {
+        $GitEmail = Read-Host "Git user email"
+        while (-not $GitEmail) { $GitEmail = Read-Host "Git user email (required)" }
+    }
+
+    if (Test-Path $GitConfigDest) {
+        $Backup = "$GitConfigDest.bak.$(Get-Date -Format 'yyyyMMddHHmmss')"
+        Write-Host "Backing up existing .gitconfig to $Backup" -ForegroundColor Yellow
+        Move-Item $GitConfigDest $Backup
+        $script:Backups += $Backup
+    }
+
+    $GitConfigSourceUnix = $GitConfigSource -replace '\\', '/'
+    @"
 [include]
     path = $GitConfigSourceUnix
 [user]
     name = "$GitName"
     email = $GitEmail
 "@ | Set-Content $GitConfigDest -Encoding UTF8
-Write-Host "Git configured as: $GitName <$GitEmail>" -ForegroundColor Green
+    Write-Host "Git configured as: $GitName <$GitEmail>" -ForegroundColor Green
+}
 
 # Install vim-plug for vim
 Write-Host ""

@@ -80,10 +80,24 @@ function Update-Dotfiles {
     Write-Host "[info] Updating dotfiles in $dir..." -ForegroundColor Cyan
     git -C $dir pull
     if ($LASTEXITCODE -eq 0) {
-        & (Join-Path $dir "windows\setup.ps1")
+        & (Join-Path $dir "windows\setup.ps1") -SkipGit
     }
 }
 Set-Alias -Name dfu -Value Update-Dotfiles
+
+# Remove all timestamped dotfiles backup files
+function Invoke-DotfilesCleanBackups {
+    $found = $false
+    Get-ChildItem $HOME -Recurse -Depth 4 -Filter '*.bak.*' -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match '\.bak\.\d+$' } |
+        ForEach-Object {
+            Write-Host "Removing $($_.FullName)"
+            Remove-Item $_.FullName -Force
+            $found = $true
+        }
+    if (-not $found) { Write-Host "[info] No backup files found." -ForegroundColor Cyan }
+}
+Set-Alias -Name dfclean -Value Invoke-DotfilesCleanBackups
 
 # Source per-machine overrides
 $LocalProfile = Join-Path $HOME "local_profile.ps1"

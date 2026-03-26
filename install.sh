@@ -2,7 +2,16 @@
 set -euo pipefail
 
 DOTFILES_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROFILE="${1:-server}"
+PROFILE="server"
+SKIP_GIT=false
+
+# Parse arguments
+for arg in "$@"; do
+    case "$arg" in
+        --skip-git) SKIP_GIT=true ;;
+        workstation|server) PROFILE="$arg" ;;
+    esac
+done
 
 # Colors for output
 RED='\033[0;31m'
@@ -12,9 +21,9 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 info() { echo -e "${CYAN}[info]${NC} $*"; }
-ok() { echo -e "${GREEN}[ok]${NC} $*"; }
+ok()   { echo -e "${GREEN}[ok]${NC} $*"; }
 warn() { echo -e "${YELLOW}[warn]${NC} $*"; }
-err() { echo -e "${RED}[error]${NC} $*"; }
+err()  { echo -e "${RED}[error]${NC} $*"; }
 
 # OS detection
 detect_os() {
@@ -32,14 +41,19 @@ detect_os() {
     fi
 }
 
-# Symlink helper — backs up existing files before linking
+# Backup tracking
+BACKUPS=()
+
+# Symlink helper — backs up existing files with timestamp before linking
 link_file() {
     local src="$1" dst="$2"
     if [ -L "$dst" ]; then
         rm -f "$dst"
     elif [ -e "$dst" ]; then
-        warn "Backing up $dst -> ${dst}.bak"
-        mv "$dst" "${dst}.bak"
+        local backup="${dst}.bak.$(date +%Y%m%d%H%M%S)"
+        warn "Backing up $dst -> $backup"
+        mv "$dst" "$backup"
+        BACKUPS+=("$backup")
     fi
     ln -sf "$src" "$dst"
     ok "Linked $dst"
@@ -91,8 +105,10 @@ setup_git() {
     if [ -L "$HOME/.gitconfig" ]; then
         rm -f "$HOME/.gitconfig"
     elif [ -e "$HOME/.gitconfig" ]; then
-        warn "Backing up $HOME/.gitconfig -> $HOME/.gitconfig.bak"
-        mv "$HOME/.gitconfig" "$HOME/.gitconfig.bak"
+        local backup="$HOME/.gitconfig.bak.$(date +%Y%m%d%H%M%S)"
+        warn "Backing up $HOME/.gitconfig -> $backup"
+        mv "$HOME/.gitconfig" "$backup"
+        BACKUPS+=("$backup")
     fi
 
     # Generate ~/.gitconfig with include and user block
@@ -106,7 +122,12 @@ GITEOF
 
     ok "Git configured as: $git_name <$git_email>"
 }
-setup_git
+
+if [ "$SKIP_GIT" = true ]; then
+    info "Skipping git configuration (--skip-git)"
+else
+    setup_git
+fi
 
 # Neovim
 mkdir -p "$HOME/.config/nvim"
@@ -199,3 +220,19 @@ echo ""
 ok "Dotfiles setup complete ($PROFILE profile)"
 echo ""
 info "Per-machine overrides: create ~/.local_profile"
+
+# Offer to clean up backup files
+if [ ${#BACKUPS[@]} -gt 0 ]; then
+    echo ""
+    warn "The following backup files were created:"
+    for b in "${BACKUPS[@]}"; do
+        warn "  $b"
+    done
+    read -rp "Delete backup files? [y/N] " answer
+    if [[ "$answer" =~ ^[Yy]$ ]]; then
+        for b in "${BACKUPS[@]}"; do
+            rm -f "$b"
+        done
+        ok "Backup files deleted"
+    fi
+fi

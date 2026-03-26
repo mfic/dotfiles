@@ -179,9 +179,21 @@ dotfiles-update() {
 
     echo "[info] Updating dotfiles in $dir..."
     git -C "$dir" pull || return 1
-    bash "$dir/install.sh" "$profile"
+    bash "$dir/install.sh" "$profile" --skip-git
 }
 alias dfu='dotfiles-update'
+
+# Remove all timestamped dotfiles backup files
+dotfiles-clean-backups() {
+    local found=0
+    while IFS= read -r -d '' f; do
+        echo "Removing $f"
+        rm -f "$f"
+        found=1
+    done < <(find "$HOME" -maxdepth 4 -name '*.bak.[0-9]*' -print0 2>/dev/null)
+    [ "$found" -eq 0 ] && echo "[info] No backup files found."
+}
+alias dfclean='dotfiles-clean-backups'
 
 run-it-tools() {
   if docker ps -a --format '{{.Names}}' | grep -Fxq it-tools; then
