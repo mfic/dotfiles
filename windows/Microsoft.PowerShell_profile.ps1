@@ -57,6 +57,10 @@ function ollama {
     docker exec -it ollama ollama @args
 }
 
+# Source per-machine overrides
+$LocalProfile = Join-Path $HOME "local_profile.ps1"
+if (Test-Path $LocalProfile) { . $LocalProfile }
+
 function Run-ItTools {
     $exists = docker ps -a --format '{{.Names}}' | Select-String -SimpleMatch 'it-tools'
 
