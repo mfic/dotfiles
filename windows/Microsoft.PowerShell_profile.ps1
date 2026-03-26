@@ -11,10 +11,10 @@ if (Get-Command oh-my-posh -ErrorAction SilentlyContinue) {
     $prevEAP = $ErrorActionPreference
     $ErrorActionPreference = 'SilentlyContinue'
     if (Test-Path $ThemeFile) {
-        oh-my-posh init $shell --config $ThemeFile | Invoke-Expression
+        oh-my-posh init $shell --config $ThemeFile | Invoke-Expression 2>$null
     }
     else {
-        oh-my-posh init $shell | Invoke-Expression
+        oh-my-posh init $shell | Invoke-Expression 2>$null
     }
     $ErrorActionPreference = $prevEAP
 }
