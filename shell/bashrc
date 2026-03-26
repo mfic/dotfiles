@@ -17,9 +17,11 @@ elif [ -f /etc/bash_completion ]; then
 fi
 
 # Source shared dotfiles
-for f in "${DOTFILES:-$HOME/dotfiles}/shell/exports.sh" "${DOTFILES:-$HOME/dotfiles}/shell/aliases.sh" "${DOTFILES:-$HOME/dotfiles}/shell/functions.sh"; do
+_df_dir="${DOTFILES:-$(dirname $(dirname $(realpath "${BASH_SOURCE[0]}")))}"
+for f in "$_df_dir/shell/exports.sh" "$_df_dir/shell/aliases.sh" "$_df_dir/shell/functions.sh"; do
     [ -f "$f" ] && . "$f"
 done
+unset _df_dir
 
 # Bash-specific settings
 if [[ $iatest > 0 ]]; then
