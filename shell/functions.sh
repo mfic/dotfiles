@@ -151,6 +151,29 @@ ollama() {
   docker exec -it ollama ollama "$@"
 }
 
+# Update dotfiles repo and re-run the install script
+dotfiles-update() {
+    local dir="${DOTFILES:-$HOME/dotfiles}"
+    if [ ! -d "$dir" ]; then
+        echo "Dotfiles directory not found: $dir"
+        return 1
+    fi
+
+    local changes
+    changes=$(git -C "$dir" status --porcelain)
+    if [ -n "$changes" ]; then
+        echo "[info] Uncommitted changes in $dir:"
+        git -C "$dir" status --short
+        echo "[info] Commit or stash your changes before updating."
+        return 1
+    fi
+
+    echo "[info] Updating dotfiles in $dir..."
+    git -C "$dir" pull || return 1
+    bash "$dir/install.sh"
+}
+alias dfu='dotfiles-update'
+
 run-it-tools() {
   if docker ps -a --format '{{.Names}}' | grep -Fxq it-tools; then
     docker start it-tools >/dev/null
