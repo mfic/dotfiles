@@ -2,17 +2,21 @@
 
 # oh-my-posh prompt (robbyrussell theme to match zsh)
 if (Get-Command oh-my-posh -ErrorAction SilentlyContinue) {
+    $shell = if ($PSVersionTable.PSVersion.Major -ge 6) { 'pwsh' } else { 'powershell' }
     $ThemesPath = $env:POSH_THEMES_PATH
     if (-not $ThemesPath) {
         $ThemesPath = Join-Path (Split-Path (Get-Command oh-my-posh).Source) "themes"
     }
     $ThemeFile = Join-Path $ThemesPath "robbyrussell.omp.json"
+    $prevEAP = $ErrorActionPreference
+    $ErrorActionPreference = 'SilentlyContinue'
     if (Test-Path $ThemeFile) {
-        oh-my-posh init pwsh --config $ThemeFile | Invoke-Expression
+        oh-my-posh init $shell --config $ThemeFile | Invoke-Expression
     }
     else {
-        oh-my-posh init pwsh | Invoke-Expression
+        oh-my-posh init $shell | Invoke-Expression
     }
+    $ErrorActionPreference = $prevEAP
 }
 
 # Docker aliases
@@ -56,6 +60,30 @@ function ollama {
     docker start ollama | Out-Null 2>$null
     docker exec -it ollama ollama @args
 }
+
+# Update dotfiles repo and re-run the setup script
+function Update-Dotfiles {
+    $dir = if ($env:DOTFILES) { $env:DOTFILES } else { Join-Path $HOME "dotfiles" }
+    if (-not (Test-Path $dir)) {
+        Write-Error "Dotfiles directory not found: $dir"
+        return
+    }
+
+    $changes = git -C $dir status --porcelain
+    if ($changes) {
+        Write-Host "[info] Uncommitted changes in $dir`:" -ForegroundColor Cyan
+        git -C $dir status --short
+        Write-Host "[info] Commit or stash your changes before updating." -ForegroundColor Cyan
+        return
+    }
+
+    Write-Host "[info] Updating dotfiles in $dir..." -ForegroundColor Cyan
+    git -C $dir pull
+    if ($LASTEXITCODE -eq 0) {
+        & (Join-Path $dir "windows\setup.ps1")
+    }
+}
+Set-Alias -Name dfu -Value Update-Dotfiles
 
 # Source per-machine overrides
 $LocalProfile = Join-Path $HOME "local_profile.ps1"
