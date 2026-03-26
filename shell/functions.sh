@@ -158,6 +158,16 @@ ollama() {
   docker exec -it ollama ollama "$@"
 }
 
+# Reload shell configuration
+dotfiles-reload() {
+    if [ -n "$ZSH_VERSION" ]; then
+        source "$HOME/.zshrc"
+    else
+        source "$HOME/.bashrc"
+    fi
+}
+alias dfr='dotfiles-reload'
+
 # Update dotfiles repo and re-run the install script
 dotfiles-update() {
     local dir="${DOTFILES:-$HOME/dotfiles}"

@@ -61,6 +61,10 @@ function ollama {
     docker exec -it ollama ollama @args
 }
 
+# Reload PowerShell profile
+function Invoke-ProfileReload { . $PROFILE }
+Set-Alias -Name dfr -Value Invoke-ProfileReload
+
 # Update dotfiles repo and re-run the setup script
 function Update-Dotfiles {
     $dir = if ($env:DOTFILES) { $env:DOTFILES } else { Join-Path $HOME "dotfiles" }
