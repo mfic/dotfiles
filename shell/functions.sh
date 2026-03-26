@@ -30,9 +30,11 @@ ftext () {
     grep -iIHrn --color=always "$1" . | less -r
 }
 
-# Copy file with a progress bar
+# Copy file with a progress bar (requires strace)
 cpp() {
-    set -e
+    if ! command -v strace &>/dev/null; then
+        echo "cpp: strace not found" >&2; return 1
+    fi
     strace -q -ewrite cp -- "${1}" "${2}" 2>&1 \
     | awk '{
         count += $NF
@@ -81,11 +83,11 @@ up () {
     for ((i=1; i <= limit; i++)); do
         d=$d/..
     done
-    d=$(echo $d | sed 's/^\///')
+    d=$(echo "$d" | sed 's/^\///')
     if [ -z "$d" ]; then
         d=..
     fi
-    cd $d
+    cd "$d"
 }
 
 # Returns the last 2 fields of the working directory
@@ -117,7 +119,12 @@ rename-all-sequentially() {
         echo "Usage: rename-all-sequentially <prefix> <extension>"
         return 1
     fi
-    ls -v | cat -n | while read n f; do mv -n "${f}" "${1}-${n}.${2}"; done
+    local i=1
+    for f in *; do
+        [ -f "$f" ] || continue
+        mv -n "$f" "${1}-${i}.${2}"
+        (( i++ ))
+    done
 }
 
 # Base64 encode (copies to clipboard if xclip/pbcopy available)
@@ -169,7 +176,10 @@ dotfiles-update() {
     fi
 
     local profile
-    if [ -f "$HOME/.dotfiles_profile" ]; then
+    if [ -n "${1:-}" ]; then
+        profile="$1"
+        echo "[info] Using profile: $profile"
+    elif [ -f "$HOME/.dotfiles_profile" ]; then
         profile=$(cat "$HOME/.dotfiles_profile")
         echo "[info] Using saved profile: $profile"
     else

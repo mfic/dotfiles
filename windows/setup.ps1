@@ -6,7 +6,8 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$DotfilesDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$DotfilesDir = $PSScriptRoot
+$RepoRoot    = Split-Path $DotfilesDir
 
 Write-Host "Setting up dotfiles on Windows..." -ForegroundColor Cyan
 
@@ -25,6 +26,16 @@ function Link-File {
         [string]$Destination,
         [string]$Label
     )
+    # If destination is already a symlink just remove it; only backup real files
+    $item = Get-Item $Destination -ErrorAction SilentlyContinue
+    if ($item -and $item.LinkType) {
+        Remove-Item $Destination -Force
+    } elseif ($item) {
+        $Backup = "$Destination.bak.$(Get-Date -Format 'yyyyMMddHHmmss')"
+        Write-Host "Backing up $Destination -> $Backup" -ForegroundColor Yellow
+        Move-Item $Destination $Backup
+        $script:Backups += $Backup
+    }
     try {
         New-Item -ItemType SymbolicLink -Path $Destination -Target $Source -Force | Out-Null
         Write-Host "Linked $Label" -ForegroundColor Green
@@ -54,6 +65,9 @@ if (Get-Command oh-my-posh -ErrorAction SilentlyContinue) {
 # Set FiraCode Nerd Font as default in Windows Terminal
 $WtSettingsPath = Join-Path $env:LOCALAPPDATA "Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json"
 if (Test-Path $WtSettingsPath) {
+    $WtBackup = "$WtSettingsPath.bak.$(Get-Date -Format 'yyyyMMddHHmmss')"
+    Copy-Item $WtSettingsPath $WtBackup
+    $script:Backups += $WtBackup
     $WtSettings = Get-Content $WtSettingsPath -Raw | ConvertFrom-Json
     if (-not $WtSettings.profiles.defaults) {
         $WtSettings.profiles | Add-Member -NotePropertyName "defaults" -NotePropertyValue @{} -Force
@@ -86,7 +100,7 @@ foreach ($ProfilePath in $ProfilePaths) {
 }
 
 # Vim config
-$VimrcSource = Join-Path (Split-Path $DotfilesDir) "vim\vimrc"
+$VimrcSource = Join-Path $RepoRoot "vim\vimrc"
 $VimrcDest = Join-Path $env:USERPROFILE "_vimrc"
 if (Test-Path $VimrcDest) {
     $Backup = "$VimrcDest.bak.$(Get-Date -Format 'yyyyMMddHHmmss')"
@@ -100,7 +114,7 @@ $NvimDir = Join-Path $env:LOCALAPPDATA "nvim"
 if (-not (Test-Path $NvimDir)) {
     New-Item -ItemType Directory -Path $NvimDir -Force | Out-Null
 }
-$NvimSource = Join-Path (Split-Path $DotfilesDir) "nvim\init.vim"
+$NvimSource = Join-Path $RepoRoot "nvim\init.vim"
 $NvimDest = Join-Path $NvimDir "init.vim"
 if (Test-Path $NvimDest) {
     $Backup = "$NvimDest.bak.$(Get-Date -Format 'yyyyMMddHHmmss')"
@@ -112,13 +126,14 @@ Link-File -Source $NvimSource -Destination $NvimDest -Label "nvim/init.vim"
 # Git config — prompt for user identity, generate .gitconfig with include
 if ($SkipGit) {
     Write-Host "[info] Skipping git configuration (-SkipGit)" -ForegroundColor Cyan
+} elseif (-not [Environment]::UserInteractive) {
+    Write-Host "[warn] Non-interactive session — skipping git setup" -ForegroundColor Yellow
 } else {
     Write-Host ""
     Write-Host "Setting up git configuration..." -ForegroundColor Cyan
-    $GitConfigSource = Join-Path (Split-Path $DotfilesDir) "git\gitconfig"
-    $GitConfigDest = Join-Path $env:USERPROFILE ".gitconfig"
+    $GitConfigSource = Join-Path $RepoRoot "git\gitconfig"
 
-    $CurrentName = git config --global user.name 2>$null
+    $CurrentName  = git config --global user.name  2>$null
     $CurrentEmail = git config --global user.email 2>$null
 
     if ($CurrentName) {
@@ -137,21 +152,11 @@ if ($SkipGit) {
         while (-not $GitEmail) { $GitEmail = Read-Host "Git user email (required)" }
     }
 
-    if (Test-Path $GitConfigDest) {
-        $Backup = "$GitConfigDest.bak.$(Get-Date -Format 'yyyyMMddHHmmss')"
-        Write-Host "Backing up existing .gitconfig to $Backup" -ForegroundColor Yellow
-        Move-Item $GitConfigDest $Backup
-        $script:Backups += $Backup
-    }
-
+    # Write via git config to avoid injection issues with special characters in names
     $GitConfigSourceUnix = $GitConfigSource -replace '\\', '/'
-    @"
-[include]
-    path = $GitConfigSourceUnix
-[user]
-    name = "$GitName"
-    email = $GitEmail
-"@ | Set-Content $GitConfigDest -Encoding UTF8
+    git config --global include.path $GitConfigSourceUnix
+    git config --global user.name    $GitName
+    git config --global user.email   $GitEmail
     Write-Host "Git configured as: $GitName <$GitEmail>" -ForegroundColor Green
 }
 

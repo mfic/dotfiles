@@ -88,13 +88,22 @@ Set-Alias -Name dfu -Value Update-Dotfiles
 # Remove all timestamped dotfiles backup files
 function Invoke-DotfilesCleanBackups {
     $found = $false
-    Get-ChildItem $HOME -Recurse -Depth 4 -Filter '*.bak.*' -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -match '\.bak\.\d+$' } |
-        ForEach-Object {
-            Write-Host "Removing $($_.FullName)"
-            Remove-Item $_.FullName -Force
-            $found = $true
-        }
+    $searchPaths = @(
+        $HOME,
+        (Join-Path $HOME "Documents\PowerShell"),
+        (Join-Path $HOME "Documents\WindowsPowerShell"),
+        (Join-Path $env:LOCALAPPDATA "nvim")
+    )
+    foreach ($path in $searchPaths) {
+        if (-not (Test-Path $path)) { continue }
+        Get-ChildItem $path -Depth 1 -Filter '*.bak.*' -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -match '\.bak\.\d+$' } |
+            ForEach-Object {
+                Write-Host "Removing $($_.FullName)"
+                Remove-Item $_.FullName -Force
+                $found = $true
+            }
+    }
     if (-not $found) { Write-Host "[info] No backup files found." -ForegroundColor Cyan }
 }
 Set-Alias -Name dfclean -Value Invoke-DotfilesCleanBackups

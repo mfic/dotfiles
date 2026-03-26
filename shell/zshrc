@@ -43,7 +43,7 @@ setopt AUTO_CD
 setopt CORRECT
 
 # Vi keybindings
-set -o vi
+bindkey -v
 
 # Kubernetes config merging
 # Default kubeconfig
@@ -54,7 +54,7 @@ fi
 # Merge additional contexts from ~/.kube/k8s/*.yml
 CUSTOM_KUBE_CONTEXTS="$HOME/.kube/k8s"
 if [ -d "$CUSTOM_KUBE_CONTEXTS" ]; then
-    for contextFile in "$CUSTOM_KUBE_CONTEXTS"/*.yml; do
+    for contextFile in "$CUSTOM_KUBE_CONTEXTS"/*.yml(N); do
         [ -f "$contextFile" ] && export KUBECONFIG="$contextFile:$KUBECONFIG"
     done
 fi

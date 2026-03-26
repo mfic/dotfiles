@@ -35,7 +35,7 @@ shopt -s checkwinsize
 
 # Append to history instead of overwriting
 shopt -s histappend
-PROMPT_COMMAND='history -a'
+PROMPT_COMMAND='history -a; __setprompt'
 
 # Allow ctrl-S for history navigation (with ctrl-R)
 stty -ixon 2>/dev/null
@@ -130,8 +130,8 @@ function __setprompt
     PS1+="\[${DARKGRAY}\])-"
 
     # User and server
-    local SSH_IP=$(echo $SSH_CLIENT | awk '{ print $1 }')
-    local SSH2_IP=$(echo $SSH2_CLIENT | awk '{ print $1 }')
+    local SSH_IP=$(echo "${SSH_CLIENT:-}" | awk '{ print $1 }')
+    local SSH2_IP=$(echo "${SSH2_CLIENT:-}" | awk '{ print $1 }')
     if [ "$SSH2_IP" ] || [ "$SSH_IP" ]; then
         PS1+="(\[${RED}\]\u@\h"
     else
@@ -160,4 +160,4 @@ function __setprompt
     PS3='Please enter a number from above list: '
     PS4='\[${DARKGRAY}\]+\[${NOCOLOR}\] '
 }
-PROMPT_COMMAND='__setprompt'
+# PROMPT_COMMAND set above — history -a and __setprompt combined

@@ -72,6 +72,11 @@ link_file "$DOTFILES_DIR/vim/vimrc" "$HOME/.vimrc"
 
 # Git config — generate ~/.gitconfig with include + user identity
 setup_git() {
+    if [ ! -t 0 ]; then
+        warn "Non-interactive shell — skipping git setup"
+        return
+    fi
+
     echo ""
     info "Setting up git configuration..."
 
@@ -101,7 +106,7 @@ setup_git() {
         done
     fi
 
-    # Back up existing gitconfig
+    # Back up existing gitconfig if it is a real file (not a symlink)
     if [ -L "$HOME/.gitconfig" ]; then
         rm -f "$HOME/.gitconfig"
     elif [ -e "$HOME/.gitconfig" ]; then
@@ -111,14 +116,10 @@ setup_git() {
         BACKUPS+=("$backup")
     fi
 
-    # Generate ~/.gitconfig with include and user block
-    cat > "$HOME/.gitconfig" <<GITEOF
-[include]
-    path = $DOTFILES_DIR/git/gitconfig
-[user]
-    name = $git_name
-    email = $git_email
-GITEOF
+    # Write gitconfig via git config to avoid heredoc injection issues
+    git config --global include.path "$DOTFILES_DIR/git/gitconfig"
+    git config --global user.name  "$git_name"
+    git config --global user.email "$git_email"
 
     ok "Git configured as: $git_name <$git_email>"
 }
@@ -228,11 +229,15 @@ if [ ${#BACKUPS[@]} -gt 0 ]; then
     for b in "${BACKUPS[@]}"; do
         warn "  $b"
     done
-    read -rp "Delete backup files? [y/N] " answer
-    if [[ "$answer" =~ ^[Yy]$ ]]; then
-        for b in "${BACKUPS[@]}"; do
-            rm -f "$b"
-        done
-        ok "Backup files deleted"
+    if [ -t 0 ]; then
+        read -rp "Delete backup files? [y/N] " answer
+        if [[ "$answer" =~ ^[Yy]$ ]]; then
+            for b in "${BACKUPS[@]}"; do
+                rm -f "$b"
+            done
+            ok "Backup files deleted"
+        fi
+    else
+        info "Run 'dfclean' to remove backup files."
     fi
 fi
