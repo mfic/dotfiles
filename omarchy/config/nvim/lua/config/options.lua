@@ -6,6 +6,14 @@
 -- LazyVim already sets number, relativenumber, ignorecase, smartcase, mouse,
 -- clipboard, signcolumn, scrolloff, undofile and termguicolors.
 
+-- Stated explicitly rather than relied on. These already match LazyVim's
+-- defaults, but vim/vimrc sets the same pair for plain vim on the servers, and
+-- having both sides declared keeps the alignment obvious instead of implicit.
+-- This file is loaded before lazy.nvim starts, so it lands before any plugin
+-- resolves a <leader> mapping.
+vim.g.mapleader = " "
+vim.g.maplocalleader = "\\"
+
 local opt = vim.opt
 
 -- vimrc used 4-space indents; LazyVim defaults to 2.

@@ -1,6 +1,13 @@
 " vim configuration
 " Works with both vim and neovim (neovim sources this via init.vim)
 
+" Leader: Space, matching LazyVim on the Omarchy desktops so leader-based
+" muscle memory carries across machines. Must be set before plug#begin, since
+" plugins resolve <leader> at the point their mappings are defined.
+" Trade-off: Space no longer moves the cursor right in normal mode.
+let mapleader = " "
+let maplocalleader = "\\"
+
 " Plugin manager: vim-plug (auto-install)
 if has('nvim')
     let data_dir = stdpath('data') . '/site'

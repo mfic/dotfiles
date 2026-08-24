@@ -388,6 +388,14 @@ To re-sync after an Omarchy update changes the upstream bindings, diff against
 
 ## Vim features
 
+**Leader is `Space`** (local leader `\\`) on both sides — LazyVim's default on the
+Omarchy desktops, and set explicitly in `vim/vimrc` for plain vim elsewhere, so
+leader-based muscle memory carries across machines. In `vimrc` it is set before
+`plug#begin`, since plugins resolve `<leader>` when their mappings are defined.
+The trade-off is the usual one: `Space` no longer moves the cursor right in
+normal mode.
+
+
 - **vim-plug** — auto-installs on first run
 - **NERDTree** — toggle with `Ctrl+n`
 - **vim-airline** — status line
