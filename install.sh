@@ -205,12 +205,22 @@ if [ "$OMARCHY" = false ]; then
 fi
 
 # Tmux
-# Skipped on Omarchy: tmux loads ~/.tmux.conf AND $XDG_CONFIG_HOME/tmux/tmux.conf,
-# XDG last, so Omarchy's config silently wins every conflicting setting (prefix
-# included) and you get a half-applied hybrid. Omarchy's own config is left
-# alone and unmanaged so `omarchy update` keeps improving it.
+# tmux/tmux.conf carries Omarchy's keybinding scheme so muscle memory matches
+# the desktops. Skipped on Omarchy itself: tmux loads ~/.tmux.conf AND
+# $XDG_CONFIG_HOME/tmux/tmux.conf, XDG last, so Omarchy's config would silently
+# win every conflict anyway. Its copy is left unmanaged so updates improve it.
 if [ "$OMARCHY" = false ]; then
-    link_file "$DOTFILES_DIR/tmux/tmux.conf" "$HOME/.tmux.conf"
+    if ! command -v tmux &>/dev/null; then
+        info "tmux not installed — skipping tmux config"
+    else
+        tmux_ver="$(tmux -V | sed -E 's/[^0-9.]//g' | awk -F. '{printf "%d%02d", $1, ($2==""?0:$2)}')"
+        if [ "${tmux_ver:-0}" -ge 301 ]; then
+            link_file "$DOTFILES_DIR/tmux/tmux.conf" "$HOME/.tmux.conf"
+        else
+            warn "tmux $(tmux -V | cut -d' ' -f2) is older than 3.1 — skipping tmux config"
+            warn "  The shared config uses '-N' binding descriptions, which 3.0 cannot parse."
+        fi
+    fi
 fi
 
 # Bin scripts

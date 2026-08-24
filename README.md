@@ -203,7 +203,7 @@ dotfiles/
 ├── nvim/
 │   └── init.vim                # Sources shared vimrc
 ├── tmux/
-│   └── tmux.conf               # Ctrl-A prefix, vim pane nav, clipboard integration
+│   └── tmux.conf               # Omarchy keybinding scheme, ported for non-Omarchy
 ├── git/
 │   └── gitconfig               # Shared git config (colors, aliases — no user block)
 ├── bin/
@@ -331,12 +331,34 @@ At the end of install you are offered the option to delete them. At any time, ru
 
 ## Tmux
 
-- **Prefix**: `Ctrl-A` (instead of default `Ctrl-B`)
-- **Pane navigation**: `h/j/k/l` (vim-style)
-- **Split**: `s` vertical, `v` horizontal
-- **Copy mode**: `Escape` to enter, `v` to select, `y` to yank (xclip on Linux, pbcopy on macOS)
-- **Reload config**: `prefix + r`
+Keybindings follow **Omarchy's scheme**, so muscle memory carries between the
+Omarchy desktops and every server and Ubuntu box. Omarchy machines keep their
+own `~/.config/tmux/tmux.conf` — that file is Omarchy's to maintain, and
+`omarchy update` keeps improving it. `tmux/tmux.conf` in this repo is the port
+of that scheme for everywhere else.
+
+- **Prefix**: `Ctrl-Space` (with `Ctrl-b` kept as a secondary prefix)
+- **Panes**: `Alt-Enter` split vertical, `Alt-Shift-Enter` split horizontal, `Alt-Escape` kill — all without the prefix
+- **Pane focus / resize**: `Ctrl-Alt-<arrow>` / `Ctrl-Alt-Shift-<arrow>`
+- **Windows**: `Alt-1`…`Alt-9` jump, `Alt-Left`/`Alt-Right` cycle, `Alt-Shift-Left/Right` move
+- **Sessions**: `Alt-Up`/`Alt-Down` switch; prefix `C`/`K`/`R` create, kill, rename
+- **Copy mode**: vi keys, `v` select, `y` copy
+- **Help**: prefix `?` — the Omarchy popup on a desktop, `list-keys -N` elsewhere
+- **Reload**: prefix `q`
 - **Mouse**: enabled
+
+Two adaptations for non-Omarchy machines:
+
+- **Clipboard is OSC 52** (`set-clipboard on`), not `xclip`/`pbcopy`. It works on Wayland, X11 and macOS — and unlike xclip it works straight out of an SSH session, which is the case that actually matters on a server.
+- **Settings are version-gated.** `extended-keys`, `allow-passthrough` and `extended-keys-format` need tmux 3.2/3.3/3.4 respectively and are applied only where they exist, so an older tmux does not error at startup.
+
+**Requires tmux >= 3.1** for the `-N` binding descriptions, which drive both the
+help popup and the `list-keys -N` fallback. `install.sh` checks the version and
+skips linking the config on anything older rather than leaving you with 40
+broken bindings.
+
+To re-sync after an Omarchy update changes the upstream bindings, diff against
+`/usr/share/omarchy/config/tmux/tmux.conf`.
 
 ## Vim features
 
