@@ -9,8 +9,20 @@ _df_omarchy=""
 if [ -r /usr/share/omarchy/default/bash/env-bootstrap ]; then
     . /usr/share/omarchy/default/bash/env-bootstrap
     [[ $- != *i* ]] && return
+
     . "$OMARCHY_PATH/default/bash/rc"
     _df_omarchy=1
+
+    # Omarchy's prompt is starship, which hooks itself with
+    # PROMPT_COMMAND=starship_precmd; mise hooks in alongside it. A plain
+    # assignment here would wipe both and drop the prompt to bash's default, so
+    # append instead. Order matters: starship_precmd stays first so it still
+    # sees the real exit status, and `history -a` runs after it.
+    if [[ "$(declare -p PROMPT_COMMAND 2>/dev/null)" == "declare -a"* ]]; then
+        PROMPT_COMMAND+=('history -a')
+    else
+        PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND; }history -a"
+    fi
 fi
 
 iatest=$(expr index "$-" i)
@@ -54,11 +66,10 @@ shopt -s checkwinsize
 # Append to history instead of overwriting
 shopt -s histappend
 
-# Omarchy themes its own prompt (starship) and re-themes it on `omarchy theme
-# set`, so __setprompt only takes over where nothing else owns the prompt.
-if [ -n "$_df_omarchy" ]; then
-    PROMPT_COMMAND='history -a'
-else
+# Omarchy owns its prompt (starship) and re-themes it on `omarchy theme set`, so
+# __setprompt only takes over where nothing else owns the prompt. On Omarchy
+# PROMPT_COMMAND was already set above, before starship had a chance to hook it.
+if [ -z "$_df_omarchy" ]; then
     PROMPT_COMMAND='history -a; __setprompt'
 fi
 
