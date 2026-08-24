@@ -234,11 +234,13 @@ dotfiles-check() {
             "$cfg/hypr/hosts/$host.lua:$dir/omarchy/config/hypr/hosts/$host.lua"
             "$cfg/nvim/lua/config/options.lua:$dir/omarchy/config/nvim/lua/config/options.lua"
             "$cfg/nvim/lua/config/keymaps.lua:$dir/omarchy/config/nvim/lua/config/keymaps.lua"
+            "$HOME/.tmux.conf:$dir/tmux/vim-nav.conf"
         )
     else
         links+=(
             "$cfg/nvim/init.vim:$dir/nvim/init.vim"
             "$HOME/.tmux.conf:$dir/tmux/tmux.conf"
+            "$HOME/.tmux.vim-nav.conf:$dir/tmux/vim-nav.conf"
         )
     fi
 

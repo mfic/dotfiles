@@ -216,6 +216,7 @@ if [ "$OMARCHY" = false ]; then
         tmux_ver="$(tmux -V | sed -E 's/[^0-9.]//g' | awk -F. '{printf "%d%02d", $1, ($2==""?0:$2)}')"
         if [ "${tmux_ver:-0}" -ge 301 ]; then
             link_file "$DOTFILES_DIR/tmux/tmux.conf" "$HOME/.tmux.conf"
+            link_file "$DOTFILES_DIR/tmux/vim-nav.conf" "$HOME/.tmux.vim-nav.conf"
         else
             warn "tmux $(tmux -V | cut -d' ' -f2) is older than 3.1 — skipping tmux config"
             warn "  The shared config uses '-N' binding descriptions, which 3.0 cannot parse."
@@ -344,6 +345,15 @@ if [ "$OMARCHY" = true ]; then
     # other machines. Add one here once it genuinely diverges — and note that
     # shell.json in particular is a full override with no deep-merge, so a
     # tracked copy freezes the bar layout against future Omarchy defaults.
+
+    # tmux: Omarchy owns ~/.config/tmux/tmux.conf, but tmux loads ~/.tmux.conf
+    # BEFORE it, so an additive overlay on keys Omarchy leaves unbound survives.
+    # That is the only tmux extension point available, and it keeps Omarchy's
+    # config unmanaged and free to improve.
+    if command -v tmux &>/dev/null; then
+        link_file "$DOTFILES_DIR/tmux/vim-nav.conf" "$HOME/.tmux.conf"
+        command -v omarchy-restart-tmux &>/dev/null && omarchy-restart-tmux >/dev/null 2>&1
+    fi
 
     # Neovim: overlay LazyVim's own user files. Nothing under lua/plugins/ is
     # touched, so Omarchy's theme-hotreload and all-themes specs stay put.

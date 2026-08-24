@@ -203,7 +203,8 @@ dotfiles/
 ├── nvim/
 │   └── init.vim                # Sources shared vimrc
 ├── tmux/
-│   └── tmux.conf               # Omarchy keybinding scheme, ported for non-Omarchy
+│   ├── tmux.conf               # Omarchy keybinding scheme, ported for non-Omarchy
+│   └── vim-nav.conf            # Additive prefix Ctrl-hjkl overlay (both platforms)
 ├── git/
 │   └── gitconfig               # Shared git config (colors, aliases — no user block)
 ├── bin/
@@ -342,12 +343,58 @@ of that scheme for everywhere else.
 - **Pane focus / resize**: `Ctrl-Alt-<arrow>` / `Ctrl-Alt-Shift-<arrow>`
 - **Windows**: `Alt-1`…`Alt-9` jump, `Alt-Left`/`Alt-Right` cycle, `Alt-Shift-Left/Right` move
 - **Sessions**: `Alt-Up`/`Alt-Down` switch; prefix `C`/`K`/`R` create, kill, rename
+- **Vim pane nav**: prefix `Ctrl-h/j/k/l` — an additive overlay, see below
 - **Copy mode**: vi keys, `v` select, `y` copy
 - **Help**: prefix `?` — the Omarchy popup on a desktop, `list-keys -N` elsewhere
 - **Reload**: prefix `q`
 - **Mouse**: enabled
 
-Two adaptations for non-Omarchy machines:
+### Vim navigation without fighting Omarchy
+
+Omarchy repurposes the vim letters: `prefix h` splits vertically and `prefix k`
+**kills the window**. Rebinding those would diverge from the shared scheme, so
+`tmux/vim-nav.conf` adds navigation on `prefix Ctrl-h/j/k/l`, which Omarchy
+leaves unbound. Omarchy's own bindings are untouched.
+
+It reaches each machine differently, because Omarchy's tmux config is not ours
+to edit:
+
+| Machine | How |
+|---------|-----|
+| Omarchy | Symlinked to `~/.tmux.conf`. tmux loads that **before** `~/.config/tmux/tmux.conf`, and Omarchy never rebinds these keys, so the overlay survives while its config stays unmanaged |
+| Everywhere else | Symlinked to `~/.tmux.vim-nav.conf` and sourced at the end of `tmux/tmux.conf` |
+
+That load order is the only tmux extension point Omarchy offers, and it is what
+makes an overlay possible at all. Keep `vim-nav.conf` standalone-loadable — on
+Omarchy it *is* the entire contents of `~/.tmux.conf`.
+
+### Clipboard
+
+Copy uses **OSC 52**, not `xclip`/`pbcopy`/`wl-copy`. tmux emits an escape
+sequence that the *terminal* turns into a clipboard write, which means:
+
+- **Nothing to install on a server.** No X11, no Wayland, no clipboard binary.
+- **It works over SSH**, which `xclip` never did — yanking in a remote tmux lands in your local clipboard.
+- The requirement moves to the **local terminal**, which must allow OSC 52 writes.
+
+| Terminal | Status |
+|----------|--------|
+| Alacritty | Needs `[terminal] osc52 = "CopyPaste"` — Omarchy sets this; add it on a non-Omarchy install |
+| Ghostty | Works by default (`clipboard-write = allow`) |
+| Kitty | Works by default |
+| foot | Works by default |
+| VTE-based (GNOME Terminal, Tilix) | Needs VTE >= 0.72 |
+| PuTTY | No OSC 52 support — use its own selection copy |
+
+`set -as terminal-features ",*:clipboard"` is what forces tmux to emit the
+sequence even when the terminfo entry lacks the `Ms` capability, which is the
+usual reason OSC 52 silently does nothing.
+
+**Pasting** needs no setup: OSC 52 *reads* are blocked by most terminals for
+good reason, so paste with the terminal's own shortcut (`Ctrl+Shift+V` or
+`Shift+Insert`) and bracketed paste handles the rest.
+
+### Two more adaptations for non-Omarchy machines:
 
 - **Clipboard is OSC 52** (`set-clipboard on`), not `xclip`/`pbcopy`. It works on Wayland, X11 and macOS — and unlike xclip it works straight out of an SSH session, which is the case that actually matters on a server.
 - **Settings are version-gated.** `extended-keys`, `allow-passthrough` and `extended-keys-format` need tmux 3.2/3.3/3.4 respectively and are applied only where they exist, so an older tmux does not error at startup.
