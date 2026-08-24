@@ -26,8 +26,25 @@ function Link-File {
         [string]$Destination,
         [string]$Label
     )
+    $item = Get-Item $Destination -Force -ErrorAction SilentlyContinue
+
+    # A copy that already matches the source needs no work. Without this, every
+    # update on a machine using copies backs the file up and rewrites it,
+    # littering the profile with .bak files.
+    if ($item -and -not $item.LinkType) {
+        $same = $false
+        try {
+            $same = (Get-FileHash $Destination).Hash -eq (Get-FileHash $Source).Hash
+        } catch { $same = $false }
+        if ($same) {
+            Write-Host "$Label already current (copy)" -ForegroundColor Green
+            $script:UsedCopy = $true
+            return
+        }
+    }
+
     # If destination is already a symlink just remove it; only backup real files
-    $item = Get-Item $Destination -ErrorAction SilentlyContinue
+    $Backup = $null
     if ($item -and $item.LinkType) {
         Remove-Item $Destination -Force
     } elseif ($item) {
@@ -36,13 +53,29 @@ function Link-File {
         Move-Item $Destination $Backup
         $script:Backups += $Backup
     }
+
     try {
-        New-Item -ItemType SymbolicLink -Path $Destination -Target $Source -Force | Out-Null
+        New-Item -ItemType SymbolicLink -Path $Destination -Target $Source -Force -ErrorAction Stop | Out-Null
         Write-Host "Linked $Label" -ForegroundColor Green
-    } catch [System.UnauthorizedAccessException] {
-        Copy-Item -Path $Source -Destination $Destination -Force
-        Write-Host "Copied $Label (symlink requires admin or Developer Mode)" -ForegroundColor Yellow
-        $script:UsedCopy = $true
+    } catch {
+        # Symlink creation fails without admin or Developer Mode, but the
+        # exception type varies across Windows and PowerShell versions. Catching
+        # only UnauthorizedAccessException let any other failure abort the script
+        # *after* the original had already been moved aside — leaving no config
+        # in place at all. Catch everything, and restore the backup if the copy
+        # fallback also fails.
+        try {
+            Copy-Item -Path $Source -Destination $Destination -Force -ErrorAction Stop
+            Write-Host "Copied $Label (symlink requires admin or Developer Mode)" -ForegroundColor Yellow
+            $script:UsedCopy = $true
+        } catch {
+            if ($Backup -and (Test-Path $Backup)) {
+                Move-Item $Backup $Destination -Force
+                $script:Backups = @($script:Backups | Where-Object { $_ -ne $Backup })
+                Write-Host "Restored $Destination from backup" -ForegroundColor Yellow
+            }
+            Write-Error "Failed to install ${Label}: $_"
+        }
     }
 }
 $script:UsedCopy = $false

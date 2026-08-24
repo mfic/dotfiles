@@ -41,6 +41,21 @@ cd $env:USERPROFILE\dotfiles\windows
 
 > **Tip:** Enable Developer Mode in *Settings → System → For Developers* to allow symlinks without admin rights. Without it, files are copied instead of linked and won't stay in sync automatically.
 
+**If a change from another machine has not shown up on Windows**, this is almost
+always why. With copies, `git pull` alone changes nothing — the copy in your
+profile is a snapshot from install time. Run `dfu` (which pulls *and* re-runs
+`setup.ps1`) rather than pulling by hand.
+
+The two editors behave differently here, which makes for a quick diagnosis:
+
+| Editor | Reads | Picks up a pull without re-running setup? |
+|--------|-------|-------------------------------------------|
+| nvim | `init.vim`, which sources `vim/vimrc` **from the repo** | yes |
+| vim | `~/_vimrc` — the linked *or copied* file | only if symlinked |
+
+So if something works in nvim but not vim on Windows, you are on copies and
+need `dfu`.
+
 ## What gets installed
 
 ### Linux — Server profile (`./install.sh server`)

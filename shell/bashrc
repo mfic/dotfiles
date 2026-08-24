@@ -55,7 +55,10 @@ unset _df_dir
 
 # Bash-specific settings
 if [[ $iatest -gt 0 ]]; then
-    bind "set bell-style visible"
+    # "visible" flashes the whole terminal on every ambiguous completion, which
+    # with show-all-if-ambiguous below means constantly. "none" drops both the
+    # flash and the beep; readline still shows the completion list.
+    bind "set bell-style none"
     bind "set completion-ignore-case on"
     bind "set show-all-if-ambiguous On"
 fi
