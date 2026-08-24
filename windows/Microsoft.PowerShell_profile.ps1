@@ -102,12 +102,12 @@ function Invoke-DotfilesCleanBackups {
     foreach ($path in $searchPaths) {
         if (-not (Test-Path $path)) { continue }
         Get-ChildItem $path -Depth 2 -Filter '*.bak.*' -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -match '\.bak\.\d+$' } |
-            ForEach-Object {
-                Write-Host "Removing $($_.FullName)"
-                Remove-Item $_.FullName -Force
-                $found = $true
-            }
+        Where-Object { $_.Name -match '\.bak\.\d+$' } |
+        ForEach-Object {
+            Write-Host "Removing $($_.FullName)"
+            Remove-Item $_.FullName -Force
+            $found = $true
+        }
     }
     if (-not $found) { Write-Host "[info] No backup files found." -ForegroundColor Cyan }
 }
@@ -131,3 +131,19 @@ function Run-ItTools {
             corentinth/it-tools:latest | Out-Null
     }
 }
+
+function Enter-NBJaqu {
+    $CredentialPath = "$env:USERPROFILE\.credentials\nb-jaqu-adm.xml"
+
+    if (-not (Test-Path $CredentialPath)) {
+        throw "Credential file not found: $CredentialPath"
+    }
+
+    $Credential = Import-Clixml -Path $CredentialPath
+
+    Enter-PSSession `
+        -ComputerName 'nb-jaqu.qn.questnet.eu' `
+        -Credential $Credential
+}
+
+Set-Alias -Name nbjaqu -Value Enter-NBJaqu
