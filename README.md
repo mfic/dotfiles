@@ -1,6 +1,18 @@
 # dotfiles
 
-Cross-platform dotfiles for Linux (Debian/Ubuntu, Arch) and Windows. Supports server (bash-only) and workstation (zsh + extras) profiles.
+Cross-platform dotfiles for Linux (Debian/Ubuntu, Arch) and Windows. Supports server (bash-only) and workstation (zsh + extras) profiles, plus an Omarchy desktop layer that is applied only on machines actually running Omarchy.
+
+## Two independent axes
+
+The **profile** decides how much shell tooling gets installed. The **desktop layer** is separate: it is detected at runtime and applied only where it belongs, so the same command is correct on every machine.
+
+| Machine | Command | Result |
+|---------|---------|--------|
+| Omarchy laptop | `./install.sh workstation` | shell + zsh + **Omarchy layer** |
+| Ubuntu workstation | `./install.sh workstation` | shell + zsh, no desktop layer |
+| Servers | `./install.sh server` | shell only |
+
+Detection is a file test (`/usr/share/omarchy/default/bash/env-bootstrap`), never a guess based on `$ID`, so a plain Arch box that is not Omarchy is treated like any other Linux machine. Force it off with `--skip-omarchy`.
 
 ## Quick Start
 
@@ -41,9 +53,11 @@ cd $env:USERPROFILE\dotfiles\windows
 | `~/.config/nvim/init.vim` | `nvim/init.vim` |
 | `~/.tmux.conf` | `tmux/tmux.conf` |
 | `~/bin/*` | `bin/*` (utility scripts) |
-| `~/.gitconfig` | generated — includes `git/gitconfig` + user identity |
+| `~/.config/git/config` | generated — includes `git/gitconfig` + user identity |
 
 vim-plug and plugins are auto-installed for both vim and neovim.
+
+On Omarchy, `~/.bashrc`, `~/.config/nvim/init.vim` and `~/.tmux.conf` are handled differently — see the desktop layer below.
 
 ### Linux — Workstation profile (`./install.sh workstation`)
 
@@ -54,6 +68,35 @@ Everything from server, plus:
 | `~/.zshrc` | `shell/zshrc` |
 
 Also installs: zsh, Oh My Zsh, zsh-autosuggestions, zsh-syntax-highlighting.
+
+### Omarchy desktop layer (automatic on Omarchy)
+
+| Symlink | Target |
+|---------|--------|
+| `~/.config/hypr/bindings.lua` | `omarchy/config/hypr/bindings.lua` |
+| `~/.config/hypr/autostart.lua` | `omarchy/config/hypr/autostart.lua` |
+| `~/.config/hypr/monitors.lua` | `omarchy/config/hypr/monitors.lua` |
+| `~/.config/hypr/hosts/<host>.lua` | `omarchy/config/hypr/hosts/<host>.lua` |
+| `~/.config/omarchy/shell.json` | `omarchy/config/omarchy/shell.json` |
+| `~/.config/alacritty/alacritty.toml` | `omarchy/config/alacritty/alacritty.toml` |
+| `~/.config/tmux/tmux.conf` | `omarchy/config/tmux/tmux.conf` |
+| `~/.config/nvim/lua/config/{options,keymaps}.lua` | `omarchy/config/nvim/lua/config/` |
+
+After linking, the Hyprland config is reloaded and validated with `hyprctl configerrors`.
+
+**Only personal overrides are tracked.** `hypr/hyprland.lua`, `hypr/input.lua` and `hypr/looknfeel.lua` are deliberately left as Omarchy ships them so package updates keep improving them. Add a file to the repo only once you have actually changed it.
+
+#### Three shared configs are suppressed on Omarchy
+
+Omarchy ships its own version of each, and layering the cross-platform one on top breaks it:
+
+| Config | What goes wrong | What happens instead |
+|--------|-----------------|----------------------|
+| `~/.bashrc` | Replacing it drops `OMARCHY_PATH`, every Omarchy alias/function/completion, and PATH setup | `shell/bashrc` detects Omarchy, sources its bootstrap and rc first, then layers the shared exports/aliases/functions on top |
+| `~/.config/nvim/init.vim` | Omarchy ships LazyVim as `init.lua`; Neovim aborts with `E5422: Conflicting configs` when both exist | Skipped. The layer overlays LazyVim's own `lua/config/` files instead, leaving `lua/plugins/` untouched |
+| `~/.tmux.conf` | tmux loads it *and* `~/.config/tmux/tmux.conf`, XDG last — so Omarchy silently wins every conflict (prefix included) and you get a half-applied hybrid | Skipped. The XDG file is tracked directly |
+
+On Omarchy the prompt is left to Omarchy (it re-themes on `omarchy theme set`); `__setprompt` still runs everywhere else.
 
 ### Windows (`windows/setup.ps1`)
 
@@ -74,6 +117,7 @@ These are available in every shell after install:
 |---------|-------|-------------|
 | `dotfiles-update` | `dfu` | Pull latest changes and re-run install (skips git config prompt) |
 | `dotfiles-reload` | `dfr` | Reload shell config without restarting the terminal |
+| `dotfiles-check` | `dfcheck` | Verify every managed config is still a symlink into this repo |
 | `dotfiles-clean-backups` | `dfclean` | Remove all timestamped `.bak.*` backup files |
 
 ### `dfu` — update dotfiles
@@ -88,13 +132,14 @@ dfu workstation  # override profile for this run
 ### `install.sh` flags
 
 ```bash
-./install.sh [server|workstation] [--skip-git] [--help]
+./install.sh [server|workstation] [--skip-git] [--skip-omarchy] [--help]
 ```
 
 | Flag | Description |
 |------|-------------|
 | `server` / `workstation` | Profile to install (default: `server`) |
 | `--skip-git` | Skip the interactive git user name/email prompt |
+| `--skip-omarchy` | Do not apply the Omarchy desktop layer even if Omarchy is detected |
 | `--help` | Show usage |
 
 ### `setup.ps1` flags (Windows)
@@ -127,6 +172,13 @@ dotfiles/
 │   ├── k8s-delete-stuck-namespaces  # Fix terminating K8s namespaces
 │   ├── mergepdf                     # Merge PDFs via ghostscript
 │   └── convertdocx2pdf             # Batch DOCX to PDF via pandoc
+├── omarchy/                    # Omarchy only — auto-detected, mirrors ~/.config
+│   └── config/
+│       ├── hypr/               # bindings, autostart, monitors + hosts/<host>.lua
+│       ├── omarchy/shell.json  # bar layout, idle timings
+│       ├── alacritty/          # font, padding, CSI-u key bindings
+│       ├── tmux/tmux.conf      # Omarchy's XDG tmux config
+│       └── nvim/lua/config/    # LazyVim overlay (options, keymaps)
 └── windows/
     ├── Microsoft.PowerShell_profile.ps1
     └── setup.ps1               # Windows bootstrap
@@ -140,6 +192,7 @@ Create a local override file for machine-specific settings (not tracked by git):
 |----------|------|
 | Linux / WSL | `~/.local_profile` |
 | Windows | `~/local_profile.ps1` |
+| Omarchy monitors | `omarchy/config/hypr/hosts/<hostname>.lua` (tracked) |
 
 ```bash
 # Example ~/.local_profile
@@ -147,14 +200,22 @@ export PATH="$HOME/go/bin:$PATH"
 alias k='kubectl'
 ```
 
-Both `bashrc` and `zshrc` source this file automatically.
+Both `bashrc` and `zshrc` source this file automatically. Use it for anything machine-bound — a 1Password `SSH_AUTH_SOCK`, a local PATH entry, a host-specific alias.
+
+Monitor layout is the one desktop setting that genuinely differs per machine, so it gets a tracked file rather than an ignored one. `hypr/monitors.lua` reads `/etc/hostname` and dispatches to `~/.config/hypr/hosts/<hostname>.lua`, which `install.sh` symlinks from the repo. Add one file per machine; a host with no file falls back to Hyprland autodetect and prints a warning at install time.
 
 ## Git user config
 
-`install.sh` and `setup.ps1` prompt for your name and email at install time. They write a `~/.gitconfig` that:
+`install.sh` prompts for your name and email at install time and writes `~/.config/git/config` (the XDG path, which is where Omarchy already puts it). `setup.ps1` still writes `~/.gitconfig` on Windows.
 
-1. Includes the shared config from `git/gitconfig` (aliases, colors, defaults)
-2. Sets your `[user]` block per-machine
+The generated file:
+
+1. Opens with a marked `[include]` block pulling in the shared `git/gitconfig` (aliases, colors, defaults)
+2. Keeps your `[user]` block, and anything else already in the file, *below* it
+
+**Order matters.** Git applies config in file order, so the include has to come first — otherwise the shared repo config would override this machine's own settings. With it at the top, `git/gitconfig` provides defaults and every local setting wins over them. That is what keeps a machine-local `init.defaultBranch = master` from being silently replaced by the repo's `main`.
+
+Anything already in the file is preserved, including a `[commit] gpgsign` block and a 1Password `op-ssh-sign` program path. The marked block is rewritten on every run, so re-running is idempotent rather than stacking a new include each time. A leftover `~/.gitconfig` is backed up and removed, since it would take precedence over the XDG file.
 
 On re-run, current values are shown as defaults — press Enter to keep them. When updating via `dfu`, the git prompt is skipped automatically (`--skip-git`).
 
@@ -176,6 +237,7 @@ At the end of install you are offered the option to delete them. At any time, ru
 |---------|-------|-------------|
 | `dotfiles-update [profile]` | `dfu` | Pull + re-run install (skips git prompt) |
 | `dotfiles-reload` | `dfr` | Reload shell config in the current session |
+| `dotfiles-check` | `dfcheck` | Verify managed configs are still linked |
 | `dotfiles-clean-backups` | `dfclean` | Remove all `.bak.*` backup files |
 
 ### Docker (both platforms)

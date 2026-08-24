@@ -1,19 +1,37 @@
 #!/bin/bash
+
+# Omarchy comes first and on its own terms. env-bootstrap sets OMARCHY_PATH and
+# PATH and is needed even by non-interactive shells, and "$OMARCHY_PATH/default/
+# bash/rc" carries every Omarchy alias, function and completion. Replacing them
+# with this file is what breaks an Omarchy machine. Detected by file test, so
+# this stays inert on Ubuntu and on servers.
+_df_omarchy=""
+if [ -r /usr/share/omarchy/default/bash/env-bootstrap ]; then
+    . /usr/share/omarchy/default/bash/env-bootstrap
+    [[ $- != *i* ]] && return
+    . "$OMARCHY_PATH/default/bash/rc"
+    _df_omarchy=1
+fi
+
 iatest=$(expr index "$-" i)
 
 # Source system-wide definitions
-if [ -f /etc/bashrc ]; then
-    . /etc/bashrc
-fi
-if [ -f /etc/bash.bashrc ]; then
-    . /etc/bash.bashrc
+if [ -z "$_df_omarchy" ]; then
+    if [ -f /etc/bashrc ]; then
+        . /etc/bashrc
+    fi
+    if [ -f /etc/bash.bashrc ]; then
+        . /etc/bash.bashrc
+    fi
 fi
 
-# Enable bash programmable completion
-if [ -f /usr/share/bash-completion/bash_completion ]; then
-    . /usr/share/bash-completion/bash_completion
-elif [ -f /etc/bash_completion ]; then
-    . /etc/bash_completion
+# Enable bash programmable completion (Omarchy's rc already did this)
+if [ -z "$_df_omarchy" ]; then
+    if [ -f /usr/share/bash-completion/bash_completion ]; then
+        . /usr/share/bash-completion/bash_completion
+    elif [ -f /etc/bash_completion ]; then
+        . /etc/bash_completion
+    fi
 fi
 
 # Source shared dotfiles
@@ -35,7 +53,14 @@ shopt -s checkwinsize
 
 # Append to history instead of overwriting
 shopt -s histappend
-PROMPT_COMMAND='history -a; __setprompt'
+
+# Omarchy themes its own prompt (starship) and re-themes it on `omarchy theme
+# set`, so __setprompt only takes over where nothing else owns the prompt.
+if [ -n "$_df_omarchy" ]; then
+    PROMPT_COMMAND='history -a'
+else
+    PROMPT_COMMAND='history -a; __setprompt'
+fi
 
 # Allow ctrl-S for history navigation (with ctrl-R)
 stty -ixon 2>/dev/null

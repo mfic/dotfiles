@@ -4,14 +4,22 @@ set -euo pipefail
 DOTFILES_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROFILE="server"
 SKIP_GIT=false
+SKIP_OMARCHY=false
+
+USAGE="Usage: $0 [workstation|server] [--skip-git] [--skip-omarchy]
+
+Profiles control how much shell tooling is installed. The Omarchy desktop
+layer is a separate axis: it is applied automatically when this machine is
+running Omarchy, and skipped everywhere else."
 
 # Parse arguments
 for arg in "$@"; do
     case "$arg" in
         --skip-git) SKIP_GIT=true ;;
+        --skip-omarchy) SKIP_OMARCHY=true ;;
         workstation|server) PROFILE="$arg" ;;
-        --help|-h) echo "Usage: $0 [workstation|server] [--skip-git]"; exit 0 ;;
-        *) echo "Unknown argument: $arg"; echo "Usage: $0 [workstation|server] [--skip-git]"; exit 1 ;;
+        --help|-h) echo "$USAGE"; exit 0 ;;
+        *) echo "Unknown argument: $arg"; echo "$USAGE"; exit 1 ;;
     esac
 done
 
@@ -61,9 +69,21 @@ link_file() {
     ok "Linked $dst"
 }
 
+# Omarchy detection — a runtime file test, never an $ID guess, so this stays
+# correct on Arch machines that are not Omarchy and on Ubuntu workstations.
+OMARCHY=false
+if [ -d /usr/share/omarchy ] && [ -r /usr/share/omarchy/default/bash/env-bootstrap ]; then
+    if [ "$SKIP_OMARCHY" = true ]; then
+        info "Omarchy detected but skipped (--skip-omarchy)"
+    else
+        OMARCHY=true
+    fi
+fi
+
 OS=$(detect_os)
 info "Detected OS: $OS"
 info "Profile: $PROFILE"
+[ "$OMARCHY" = true ] && info "Desktop layer: omarchy"
 echo ""
 
 # Shared config (all profiles)
@@ -108,7 +128,16 @@ setup_git() {
         done
     fi
 
-    # Back up existing gitconfig if it is a real file (not a symlink)
+    # Target the XDG config explicitly rather than relying on `--global`, whose
+    # destination depends on which of the two files already exists. Writing with
+    # --file preserves everything already in there — notably a [commit] gpgsign
+    # block and any 1Password op-ssh-sign program path.
+    local git_cfg="${XDG_CONFIG_HOME:-$HOME/.config}/git/config"
+    mkdir -p "$(dirname "$git_cfg")"
+    touch "$git_cfg"
+
+    # ~/.gitconfig takes precedence over the XDG file, so a leftover one would
+    # shadow what we are about to write. Back it up and remove it.
     if [ -L "$HOME/.gitconfig" ]; then
         rm -f "$HOME/.gitconfig"
     elif [ -e "$HOME/.gitconfig" ]; then
@@ -118,12 +147,46 @@ setup_git() {
         BACKUPS+=("$backup")
     fi
 
-    # Write gitconfig via git config to avoid heredoc injection issues
-    git config --global include.path "$DOTFILES_DIR/git/gitconfig"
-    git config --global user.name  "$git_name"
-    git config --global user.email "$git_email"
+    git config --file "$git_cfg" user.name  "$git_name"
+    git config --file "$git_cfg" user.email "$git_email"
 
-    ok "Git configured as: $git_name <$git_email>"
+    # The include must come FIRST. Git applies config in file order, so an
+    # include appended at the end would let the shared repo config override
+    # this machine's own settings — backwards. Placing it at the top makes
+    # git/gitconfig the defaults and everything below it the local override.
+    #
+    # The marker block is removed and rewritten on every run, so re-running is
+    # idempotent instead of stacking a new include each time.
+    sed -i '/^# >>> dotfiles shared config >>>$/,/^# <<< dotfiles shared config <<<$/d' "$git_cfg"
+
+    # Safety net for a config written by an older version of this script, which
+    # appended an unmarked include at the end of the file.
+    git config --file "$git_cfg" --unset-all include.path \
+        "^$(printf '%s' "$DOTFILES_DIR/git/gitconfig" | sed 's/[].[\*^$\\/]/\\&/g')$" 2>/dev/null || true
+    if ! git config --file "$git_cfg" --get-all include.path >/dev/null 2>&1; then
+        sed -i '/^\[include\]$/d' "$git_cfg"
+    fi
+
+    # Drop leading blank lines so re-runs do not accumulate them.
+    sed -i '/./,$!d' "$git_cfg"
+
+    local git_tmp="$git_cfg.tmp.$$"
+    {
+        echo "# >>> dotfiles shared config >>>"
+        echo "# Managed by install.sh. Settings below this block override it."
+        echo "[include]"
+        echo "	path = $DOTFILES_DIR/git/gitconfig"
+        echo "# <<< dotfiles shared config <<<"
+        echo ""
+        cat "$git_cfg"
+    } > "$git_tmp"
+    mv "$git_tmp" "$git_cfg"
+
+    if git config --file "$git_cfg" --get commit.gpgsign >/dev/null 2>&1; then
+        ok "Preserved existing commit signing configuration"
+    fi
+
+    ok "Git configured as: $git_name <$git_email> ($git_cfg)"
 }
 
 if [ "$SKIP_GIT" = true ]; then
@@ -133,11 +196,22 @@ else
 fi
 
 # Neovim
-mkdir -p "$HOME/.config/nvim"
-link_file "$DOTFILES_DIR/nvim/init.vim" "$HOME/.config/nvim/init.vim"
+# Skipped on Omarchy: it ships LazyVim at ~/.config/nvim/init.lua, and Neovim
+# aborts with "E5422: Conflicting configs" when init.lua and init.vim coexist.
+# The omarchy layer overlays LazyVim's own lua/config/ files instead.
+if [ "$OMARCHY" = false ]; then
+    mkdir -p "$HOME/.config/nvim"
+    link_file "$DOTFILES_DIR/nvim/init.vim" "$HOME/.config/nvim/init.vim"
+fi
 
 # Tmux
-link_file "$DOTFILES_DIR/tmux/tmux.conf" "$HOME/.tmux.conf"
+# Skipped on Omarchy: tmux loads ~/.tmux.conf AND $XDG_CONFIG_HOME/tmux/tmux.conf,
+# XDG last, so Omarchy's config silently wins every conflicting setting (prefix
+# included) and you get a half-applied hybrid. The omarchy layer tracks the XDG
+# file directly.
+if [ "$OMARCHY" = false ]; then
+    link_file "$DOTFILES_DIR/tmux/tmux.conf" "$HOME/.tmux.conf"
+fi
 
 # Bin scripts
 if [ -d "$DOTFILES_DIR/bin" ]; then
@@ -188,7 +262,9 @@ fi
 # Install vim-plug for vim
 echo ""
 info "Setting up vim-plug..."
-if [ ! -f "$HOME/.vim/autoload/plug.vim" ]; then
+if ! command -v vim &>/dev/null; then
+    info "vim not installed — skipping vim-plug for vim"
+elif [ ! -f "$HOME/.vim/autoload/plug.vim" ]; then
     curl -fLo "$HOME/.vim/autoload/plug.vim" --create-dirs \
         https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
     ok "vim-plug installed for vim"
@@ -196,9 +272,13 @@ else
     ok "vim-plug already installed for vim"
 fi
 
-# Install vim-plug for neovim
+# Install vim-plug for neovim.
+# Skipped on Omarchy, where Neovim is LazyVim and manages plugins with
+# lazy.nvim — vim-plug would be dead weight next to it.
 NVIM_DATA="${XDG_DATA_HOME:-$HOME/.local/share}/nvim/site"
-if [ ! -f "$NVIM_DATA/autoload/plug.vim" ]; then
+if [ "$OMARCHY" = true ]; then
+    info "Omarchy Neovim is LazyVim — skipping vim-plug for neovim"
+elif [ ! -f "$NVIM_DATA/autoload/plug.vim" ]; then
     curl -fLo "$NVIM_DATA/autoload/plug.vim" --create-dirs \
         https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
     ok "vim-plug installed for neovim"
@@ -215,12 +295,66 @@ if command -v vim &>/dev/null; then
         warn "Vim plugin install may have failed — run ':PlugInstall' manually"
     fi
 fi
-if command -v nvim &>/dev/null; then
+if [ "$OMARCHY" = false ] && command -v nvim &>/dev/null; then
     if nvim +PlugInstall +qall 2>/dev/null; then
         ok "Neovim plugins installed"
     else
         warn "Neovim plugin install may have failed — run ':PlugInstall' manually"
     fi
+fi
+
+# Omarchy desktop layer — Arch + Hyprland + Omarchy shell only.
+if [ "$OMARCHY" = true ]; then
+    echo ""
+    info "Setting up Omarchy desktop layer..."
+    OMARCHY_SRC="$DOTFILES_DIR/omarchy/config"
+
+    mkdir -p "$HOME/.config/hypr/hosts" "$HOME/.config/omarchy" \
+             "$HOME/.config/alacritty" "$HOME/.config/tmux" \
+             "$HOME/.config/nvim/lua/config"
+
+    # Hyprland — personal overrides only. hyprland.lua, input.lua and
+    # looknfeel.lua are deliberately left as Omarchy ships them, so package
+    # updates can keep improving them.
+    link_file "$OMARCHY_SRC/hypr/bindings.lua"  "$HOME/.config/hypr/bindings.lua"
+    link_file "$OMARCHY_SRC/hypr/autostart.lua" "$HOME/.config/hypr/autostart.lua"
+    link_file "$OMARCHY_SRC/hypr/monitors.lua"  "$HOME/.config/hypr/monitors.lua"
+
+    # Per-machine monitor layout, dispatched from monitors.lua by hostname.
+    HOSTNAME_SHORT="$(cat /etc/hostname 2>/dev/null | tr -d '[:space:]')"
+    if [ -f "$OMARCHY_SRC/hypr/hosts/$HOSTNAME_SHORT.lua" ]; then
+        link_file "$OMARCHY_SRC/hypr/hosts/$HOSTNAME_SHORT.lua" \
+                  "$HOME/.config/hypr/hosts/$HOSTNAME_SHORT.lua"
+    else
+        warn "No monitor config for host '$HOSTNAME_SHORT' — using Hyprland autodetect."
+        warn "  Add one at omarchy/config/hypr/hosts/$HOSTNAME_SHORT.lua"
+    fi
+
+    link_file "$OMARCHY_SRC/omarchy/shell.json"       "$HOME/.config/omarchy/shell.json"
+    link_file "$OMARCHY_SRC/alacritty/alacritty.toml" "$HOME/.config/alacritty/alacritty.toml"
+    link_file "$OMARCHY_SRC/tmux/tmux.conf"           "$HOME/.config/tmux/tmux.conf"
+
+    # Neovim: overlay LazyVim's own user files. Nothing under lua/plugins/ is
+    # touched, so Omarchy's theme-hotreload and all-themes specs stay put.
+    link_file "$OMARCHY_SRC/nvim/lua/config/options.lua" "$HOME/.config/nvim/lua/config/options.lua"
+    link_file "$OMARCHY_SRC/nvim/lua/config/keymaps.lua" "$HOME/.config/nvim/lua/config/keymaps.lua"
+
+    # Validate the Hyprland config rather than trusting the reload.
+    if command -v hyprctl &>/dev/null && hyprctl version &>/dev/null; then
+        hyprctl reload >/dev/null 2>&1
+        errors="$(hyprctl configerrors 2>/dev/null)"
+        if [ -z "$errors" ] || [ "$errors" = "no errors" ]; then
+            ok "Hyprland reloaded with no config errors"
+        else
+            err "Hyprland reported config errors:"
+            echo "$errors"
+        fi
+    else
+        info "Hyprland not running — config will apply at next login"
+    fi
+
+    command -v omarchy-restart-tmux &>/dev/null && omarchy-restart-tmux >/dev/null 2>&1
+    ok "Omarchy desktop layer linked"
 fi
 
 echo "$PROFILE" > "$HOME/.dotfiles_profile"

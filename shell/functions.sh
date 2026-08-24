@@ -202,6 +202,85 @@ dotfiles-update() {
 }
 alias dfu='dotfiles-update'
 
+# Verify that every managed config is still a symlink into the dotfiles repo.
+#
+# Worth running after `omarchy update`, and especially after `omarchy refresh
+# <app>` or `omarchy reinstall configs`: those back up and *copy* a fresh
+# default into place, which silently replaces the symlink with a real file. The
+# config keeps working, so nothing complains — it has just stopped being shared
+# between machines.
+dotfiles-check() {
+    local dir="${DOTFILES:-$HOME/dotfiles}"
+    local cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
+    local ok=0 detached=0 missing=0
+
+    if [ ! -d "$dir" ]; then
+        echo "Dotfiles directory not found: $dir"
+        return 1
+    fi
+
+    local links=(
+        "$HOME/.bashrc:$dir/shell/bashrc"
+        "$HOME/.bash_profile:$dir/shell/bash_profile"
+        "$HOME/.vimrc:$dir/vim/vimrc"
+    )
+
+    if [ -r /usr/share/omarchy/default/bash/env-bootstrap ]; then
+        local host
+        host="$(cat /etc/hostname 2>/dev/null | tr -d '[:space:]')"
+        links+=(
+            "$cfg/hypr/bindings.lua:$dir/omarchy/config/hypr/bindings.lua"
+            "$cfg/hypr/autostart.lua:$dir/omarchy/config/hypr/autostart.lua"
+            "$cfg/hypr/monitors.lua:$dir/omarchy/config/hypr/monitors.lua"
+            "$cfg/hypr/hosts/$host.lua:$dir/omarchy/config/hypr/hosts/$host.lua"
+            "$cfg/omarchy/shell.json:$dir/omarchy/config/omarchy/shell.json"
+            "$cfg/alacritty/alacritty.toml:$dir/omarchy/config/alacritty/alacritty.toml"
+            "$cfg/tmux/tmux.conf:$dir/omarchy/config/tmux/tmux.conf"
+            "$cfg/nvim/lua/config/options.lua:$dir/omarchy/config/nvim/lua/config/options.lua"
+            "$cfg/nvim/lua/config/keymaps.lua:$dir/omarchy/config/nvim/lua/config/keymaps.lua"
+        )
+    else
+        links+=(
+            "$cfg/nvim/init.vim:$dir/nvim/init.vim"
+            "$HOME/.tmux.conf:$dir/tmux/tmux.conf"
+        )
+    fi
+
+    [ -f "$HOME/.dotfiles_profile" ] && \
+        [ "$(cat "$HOME/.dotfiles_profile")" = "workstation" ] && \
+        links+=("$HOME/.zshrc:$dir/shell/zshrc")
+
+    local entry dest want actual
+    for entry in "${links[@]}"; do
+        dest="${entry%%:*}"
+        want="${entry#*:}"
+        if [ ! -e "$dest" ] && [ ! -L "$dest" ]; then
+            echo "[missing]  $dest"
+            missing=$((missing + 1))
+        elif [ ! -L "$dest" ]; then
+            echo "[detached] $dest is a real file, not a link to ${want#$dir/}"
+            detached=$((detached + 1))
+        else
+            actual="$(readlink -f "$dest" 2>/dev/null)"
+            if [ "$actual" != "$(readlink -f "$want" 2>/dev/null)" ]; then
+                echo "[wrong]    $dest -> $actual"
+                detached=$((detached + 1))
+            else
+                ok=$((ok + 1))
+            fi
+        fi
+    done
+
+    echo ""
+    echo "[info] $ok linked, $detached detached, $missing missing"
+    if [ "$detached" -gt 0 ]; then
+        echo "[info] Re-run install.sh to relink (existing files are backed up first)."
+        return 1
+    fi
+    return 0
+}
+alias dfcheck='dotfiles-check'
+
 # Remove all timestamped dotfiles backup files
 dotfiles-clean-backups() {
     local found=0
