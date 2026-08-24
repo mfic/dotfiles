@@ -203,8 +203,7 @@ dotfiles/
 ├── nvim/
 │   └── init.vim                # Sources shared vimrc
 ├── tmux/
-│   ├── tmux.conf               # Omarchy keybinding scheme, ported for non-Omarchy
-│   └── vim-nav.conf            # Additive prefix Ctrl-hjkl overlay (both platforms)
+│   └── tmux.conf               # Omarchy keybinding scheme, ported for non-Omarchy
 ├── git/
 │   └── gitconfig               # Shared git config (colors, aliases — no user block)
 ├── bin/
@@ -340,33 +339,13 @@ of that scheme for everywhere else.
 
 - **Prefix**: `Ctrl-Space` (with `Ctrl-b` kept as a secondary prefix)
 - **Panes**: `Alt-Enter` split vertical, `Alt-Shift-Enter` split horizontal, `Alt-Escape` kill — all without the prefix
-- **Pane focus / resize**: `Ctrl-Alt-<arrow>` / `Ctrl-Alt-Shift-<arrow>`
+- **Pane focus / resize**: `Ctrl-Alt-<arrow>` / `Ctrl-Alt-Shift-<arrow>` — note Omarchy reuses the vim letters: `prefix h` splits vertically and `prefix k` **kills the window**
 - **Windows**: `Alt-1`…`Alt-9` jump, `Alt-Left`/`Alt-Right` cycle, `Alt-Shift-Left/Right` move
 - **Sessions**: `Alt-Up`/`Alt-Down` switch; prefix `C`/`K`/`R` create, kill, rename
-- **Vim pane nav**: prefix `Ctrl-h/j/k/l` — an additive overlay, see below
 - **Copy mode**: vi keys, `v` select, `y` copy
 - **Help**: prefix `?` — the Omarchy popup on a desktop, `list-keys -N` elsewhere
 - **Reload**: prefix `q`
 - **Mouse**: enabled
-
-### Vim navigation without fighting Omarchy
-
-Omarchy repurposes the vim letters: `prefix h` splits vertically and `prefix k`
-**kills the window**. Rebinding those would diverge from the shared scheme, so
-`tmux/vim-nav.conf` adds navigation on `prefix Ctrl-h/j/k/l`, which Omarchy
-leaves unbound. Omarchy's own bindings are untouched.
-
-It reaches each machine differently, because Omarchy's tmux config is not ours
-to edit:
-
-| Machine | How |
-|---------|-----|
-| Omarchy | Symlinked to `~/.tmux.conf`. tmux loads that **before** `~/.config/tmux/tmux.conf`, and Omarchy never rebinds these keys, so the overlay survives while its config stays unmanaged |
-| Everywhere else | Symlinked to `~/.tmux.vim-nav.conf` and sourced at the end of `tmux/tmux.conf` |
-
-That load order is the only tmux extension point Omarchy offers, and it is what
-makes an overlay possible at all. Keep `vim-nav.conf` standalone-loadable — on
-Omarchy it *is* the entire contents of `~/.tmux.conf`.
 
 ### Clipboard
 
