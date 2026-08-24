@@ -230,12 +230,8 @@ dotfiles-check() {
         host="$(cat /etc/hostname 2>/dev/null | tr -d '[:space:]')"
         links+=(
             "$cfg/hypr/bindings.lua:$dir/omarchy/config/hypr/bindings.lua"
-            "$cfg/hypr/autostart.lua:$dir/omarchy/config/hypr/autostart.lua"
             "$cfg/hypr/monitors.lua:$dir/omarchy/config/hypr/monitors.lua"
             "$cfg/hypr/hosts/$host.lua:$dir/omarchy/config/hypr/hosts/$host.lua"
-            "$cfg/omarchy/shell.json:$dir/omarchy/config/omarchy/shell.json"
-            "$cfg/alacritty/alacritty.toml:$dir/omarchy/config/alacritty/alacritty.toml"
-            "$cfg/tmux/tmux.conf:$dir/omarchy/config/tmux/tmux.conf"
             "$cfg/nvim/lua/config/options.lua:$dir/omarchy/config/nvim/lua/config/options.lua"
             "$cfg/nvim/lua/config/keymaps.lua:$dir/omarchy/config/nvim/lua/config/keymaps.lua"
         )

@@ -74,17 +74,55 @@ Also installs: zsh, Oh My Zsh, zsh-autosuggestions, zsh-syntax-highlighting.
 | Symlink | Target |
 |---------|--------|
 | `~/.config/hypr/bindings.lua` | `omarchy/config/hypr/bindings.lua` |
-| `~/.config/hypr/autostart.lua` | `omarchy/config/hypr/autostart.lua` |
 | `~/.config/hypr/monitors.lua` | `omarchy/config/hypr/monitors.lua` |
 | `~/.config/hypr/hosts/<host>.lua` | `omarchy/config/hypr/hosts/<host>.lua` |
-| `~/.config/omarchy/shell.json` | `omarchy/config/omarchy/shell.json` |
-| `~/.config/alacritty/alacritty.toml` | `omarchy/config/alacritty/alacritty.toml` |
-| `~/.config/tmux/tmux.conf` | `omarchy/config/tmux/tmux.conf` |
 | `~/.config/nvim/lua/config/{options,keymaps}.lua` | `omarchy/config/nvim/lua/config/` |
 
 After linking, the Hyprland config is reloaded and validated with `hyprctl configerrors`.
 
-**Only personal overrides are tracked.** `hypr/hyprland.lua`, `hypr/input.lua` and `hypr/looknfeel.lua` are deliberately left as Omarchy ships them so package updates keep improving them. Add a file to the repo only once you have actually changed it.
+#### The rule: overlay, never override
+
+Omarchy keeps improving its defaults on every `omarchy update`. Any file we copy
+into this repo is frozen at the moment we copied it, so a tracked file stops
+receiving those improvements and spreads the stale version to every other
+machine. So the layer only ever touches Omarchy's **designated extension
+points** — files Omarchy expects you to own, loaded *after* its defaults.
+
+`~/.config/hypr/hyprland.lua` documents the pattern in Omarchy's own words:
+
+> Put your personal overrides in these files. They're loaded after Omarchy's
+> defaults so package updates can improve the defaults without rewriting your
+> `~/.config/hypr` files.
+
+The extension points worth knowing, and what each is for:
+
+| Extension point | Use it for | Survives updates |
+|-----------------|------------|------------------|
+| `hypr/{bindings,input,looknfeel,monitors,autostart}.lua` | Hyprland overrides; real defaults stay in `/usr/share/omarchy/default/hypr/` | yes — loaded after defaults |
+| `~/.config/nvim/lua/config/{options,keymaps,autocmds}.lua` | LazyVim settings and keymaps | yes — loaded on top of LazyVim |
+| `~/.config/nvim/lua/plugins/*.lua` | Extra or overridden plugin specs | yes — merged by lazy.nvim |
+| `omarchy plugin clone <id>` | Customizing a built-in bar widget | yes — clone is yours |
+| `~/.config/omarchy/hooks/<type>.d/` | Scripts on system events | yes — additive directory |
+| `~/.config/omarchy/extensions/omarchy-menu.jsonc` | Extending the menu; reuse an id to override a row | yes — merged |
+| `~/.config/omarchy/themes/<name>/` | Overlaying a stock theme's colors | yes — overlay |
+| `~/.config/omarchy/shell.json` | Bar layout, idle timings | **no — full override, no deep-merge** |
+
+#### What is deliberately not tracked
+
+Only files carrying real local content belong in the repo. As of now that is one
+Hyprland binding, the monitor layout, and the Neovim overlay. These are left to
+Omarchy because they are byte-for-byte equivalent to its shipped defaults:
+
+| File | Why not |
+|------|---------|
+| `alacritty/alacritty.toml` | Functionally identical to Omarchy's default |
+| `tmux/tmux.conf` | Identical, and the local copy is *behind* — missing `bind ?` and the `-N` descriptions that power `omarchy menu tmux keybindings` |
+| `omarchy/shell.json` | Identical, and it is a full override with no deep-merge, so tracking it would freeze the bar against future defaults |
+| `hypr/autostart.lua` | No statements, only Omarchy's comments |
+| `hypr/{hyprland,input,looknfeel}.lua` | Unmodified Omarchy defaults |
+
+Add any of these once it genuinely diverges — not before. `dfcheck` reports
+what is currently linked.
 
 #### Three shared configs are suppressed on Omarchy
 
@@ -94,7 +132,7 @@ Omarchy ships its own version of each, and layering the cross-platform one on to
 |--------|-----------------|----------------------|
 | `~/.bashrc` | Replacing it drops `OMARCHY_PATH`, every Omarchy alias/function/completion, and PATH setup | `shell/bashrc` detects Omarchy, sources its bootstrap and rc first, then layers the shared exports/aliases/functions on top |
 | `~/.config/nvim/init.vim` | Omarchy ships LazyVim as `init.lua`; Neovim aborts with `E5422: Conflicting configs` when both exist | Skipped. The layer overlays LazyVim's own `lua/config/` files instead, leaving `lua/plugins/` untouched |
-| `~/.tmux.conf` | tmux loads it *and* `~/.config/tmux/tmux.conf`, XDG last — so Omarchy silently wins every conflict (prefix included) and you get a half-applied hybrid | Skipped. The XDG file is tracked directly |
+| `~/.tmux.conf` | tmux loads it *and* `~/.config/tmux/tmux.conf`, XDG last — so Omarchy silently wins every conflict (prefix included) and you get a half-applied hybrid | Skipped. Omarchy's config is left unmanaged so updates keep improving it |
 
 On Omarchy the prompt is left to Omarchy (it re-themes on `omarchy theme set`); `__setprompt` still runs everywhere else.
 
@@ -174,10 +212,7 @@ dotfiles/
 │   └── convertdocx2pdf             # Batch DOCX to PDF via pandoc
 ├── omarchy/                    # Omarchy only — auto-detected, mirrors ~/.config
 │   └── config/
-│       ├── hypr/               # bindings, autostart, monitors + hosts/<host>.lua
-│       ├── omarchy/shell.json  # bar layout, idle timings
-│       ├── alacritty/          # font, padding, CSI-u key bindings
-│       ├── tmux/tmux.conf      # Omarchy's XDG tmux config
+│       ├── hypr/               # bindings, monitors + hosts/<host>.lua
 │       └── nvim/lua/config/    # LazyVim overlay (options, keymaps)
 └── windows/
     ├── Microsoft.PowerShell_profile.ps1

@@ -207,8 +207,8 @@ fi
 # Tmux
 # Skipped on Omarchy: tmux loads ~/.tmux.conf AND $XDG_CONFIG_HOME/tmux/tmux.conf,
 # XDG last, so Omarchy's config silently wins every conflicting setting (prefix
-# included) and you get a half-applied hybrid. The omarchy layer tracks the XDG
-# file directly.
+# included) and you get a half-applied hybrid. Omarchy's own config is left
+# alone and unmanaged so `omarchy update` keeps improving it.
 if [ "$OMARCHY" = false ]; then
     link_file "$DOTFILES_DIR/tmux/tmux.conf" "$HOME/.tmux.conf"
 fi
@@ -309,16 +309,13 @@ if [ "$OMARCHY" = true ]; then
     info "Setting up Omarchy desktop layer..."
     OMARCHY_SRC="$DOTFILES_DIR/omarchy/config"
 
-    mkdir -p "$HOME/.config/hypr/hosts" "$HOME/.config/omarchy" \
-             "$HOME/.config/alacritty" "$HOME/.config/tmux" \
-             "$HOME/.config/nvim/lua/config"
+    mkdir -p "$HOME/.config/hypr/hosts" "$HOME/.config/nvim/lua/config"
 
     # Hyprland — personal overrides only. hyprland.lua, input.lua and
     # looknfeel.lua are deliberately left as Omarchy ships them, so package
     # updates can keep improving them.
-    link_file "$OMARCHY_SRC/hypr/bindings.lua"  "$HOME/.config/hypr/bindings.lua"
-    link_file "$OMARCHY_SRC/hypr/autostart.lua" "$HOME/.config/hypr/autostart.lua"
-    link_file "$OMARCHY_SRC/hypr/monitors.lua"  "$HOME/.config/hypr/monitors.lua"
+    link_file "$OMARCHY_SRC/hypr/bindings.lua" "$HOME/.config/hypr/bindings.lua"
+    link_file "$OMARCHY_SRC/hypr/monitors.lua" "$HOME/.config/hypr/monitors.lua"
 
     # Per-machine monitor layout, dispatched from monitors.lua by hostname.
     HOSTNAME_SHORT="$(cat /etc/hostname 2>/dev/null | tr -d '[:space:]')"
@@ -330,9 +327,13 @@ if [ "$OMARCHY" = true ]; then
         warn "  Add one at omarchy/config/hypr/hosts/$HOSTNAME_SHORT.lua"
     fi
 
-    link_file "$OMARCHY_SRC/omarchy/shell.json"       "$HOME/.config/omarchy/shell.json"
-    link_file "$OMARCHY_SRC/alacritty/alacritty.toml" "$HOME/.config/alacritty/alacritty.toml"
-    link_file "$OMARCHY_SRC/tmux/tmux.conf"           "$HOME/.config/tmux/tmux.conf"
+    # Deliberately NOT tracked: alacritty.toml, tmux/tmux.conf, omarchy/shell.json
+    # and hypr/autostart.lua. Omarchy owns and keeps improving all four, and none
+    # of them currently differs from the shipped default in any way that matters.
+    # Tracking a file like that only pins an old default and spreads it to the
+    # other machines. Add one here once it genuinely diverges — and note that
+    # shell.json in particular is a full override with no deep-merge, so a
+    # tracked copy freezes the bar layout against future Omarchy defaults.
 
     # Neovim: overlay LazyVim's own user files. Nothing under lua/plugins/ is
     # touched, so Omarchy's theme-hotreload and all-themes specs stay put.
@@ -353,7 +354,6 @@ if [ "$OMARCHY" = true ]; then
         info "Hyprland not running — config will apply at next login"
     fi
 
-    command -v omarchy-restart-tmux &>/dev/null && omarchy-restart-tmux >/dev/null 2>&1
     ok "Omarchy desktop layer linked"
 fi
 
