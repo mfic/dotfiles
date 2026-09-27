@@ -169,6 +169,10 @@ if ($SkipGit) {
         while (-not $GitEmail) { $GitEmail = Read-Host "Git user email (required)" }
     }
 
+    # Read-Host keeps quotes literally; strip them so they don't end up in commits
+    $GitName  = $GitName.Trim().Trim("'", '"')
+    $GitEmail = $GitEmail.Trim().Trim("'", '"')
+
     # Write via git config to avoid injection issues with special characters in names
     $GitConfigSourceUnix = $GitConfigSource -replace '\\', '/'
     git config --global include.path "$GitConfigSourceUnix"

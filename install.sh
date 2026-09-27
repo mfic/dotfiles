@@ -128,6 +128,10 @@ setup_git() {
         done
     fi
 
+    # read keeps quotes literally; strip surrounding ones so they don't end up in commits
+    git_name="${git_name#[\"\']}";   git_name="${git_name%[\"\']}"
+    git_email="${git_email#[\"\']}"; git_email="${git_email%[\"\']}"
+
     # Target the XDG config explicitly rather than relying on `--global`, whose
     # destination depends on which of the two files already exists. Writing with
     # --file preserves everything already in there — notably a [commit] gpgsign
