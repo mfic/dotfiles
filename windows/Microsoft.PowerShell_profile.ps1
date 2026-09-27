@@ -48,6 +48,8 @@ function Run-Ollama {
     }
     else {
         docker run -d `
+            --gpus=all `
+            -e OLLAMA_CONTEXT_LENGTH=65536 `
             --name ollama `
             --restart unless-stopped `
             -v ollama:/root/.ollama `
