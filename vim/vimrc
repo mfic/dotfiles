@@ -26,6 +26,11 @@ call plug#begin()
 Plug 'preservim/nerdtree'
 Plug 'vim-airline/vim-airline'
 Plug 'tpope/vim-sensible'
+" OSC 52 yank for Vims too old for the bundled osc52 package (< 9.1.1984,
+" e.g. Debian 12 / Ubuntu 24.04). Newer Vims use the built-in one below.
+if !has('nvim') && !has('clipboard_provider')
+    Plug 'ojroques/vim-oscyank', { 'branch': 'main' }
+endif
 call plug#end()
 
 " Display
@@ -35,6 +40,19 @@ syntax on
 set cursorline
 set showmatch
 set laststatus=2
+
+" Colours. Without an explicit scheme Vim falls back to 'default', which keys
+" its colours off the terminal palette and a guessed background — the usual
+" source of unreadable pairs like red on pink in sshconfig files. habamax ships
+" with Vim 9 and Neovim 0.8+; desert is the fallback for anything older.
+set background=dark
+if has('termguicolors') && ($COLORTERM ==# 'truecolor' || $COLORTERM ==# '24bit')
+    set termguicolors
+endif
+silent! colorscheme habamax
+if !exists('g:colors_name') || g:colors_name !=# 'habamax'
+    silent! colorscheme desert
+endif
 
 " Indentation
 set tabstop=4
@@ -52,6 +70,25 @@ set smartcase
 " Usability
 set mouse=a
 set clipboard=unnamedplus
+
+" Clipboard over ssh/tmux: there is no X11/Wayland on a server, so unnamedplus
+" alone leaves every yank inside Vim. Route the + and * registers through
+" OSC 52 instead; tmux (set-clipboard on) forwards it to the local terminal.
+" Local sessions keep the native clipboard. Neovim >= 0.10 does this itself.
+if !has('nvim') && (!empty($SSH_TTY) || !empty($TMUX))
+    if has('clipboard_provider')
+        " Vim >= 9.1.1984: bundled osc52 package
+        packadd osc52
+        let g:osc52_force_avail = 1     " tmux answers the DA1 probe itself, so autodetect fails
+        let g:osc52_disable_paste = 1   " terminals block clipboard reads; paste with Ctrl+Shift+V
+        set clipmethod=wayland,x11,osc52
+    elseif exists(':OSCYankRegister') == 2 || !empty(glob(data_dir . '/plugged/vim-oscyank'))
+        " Older Vim: vim-oscyank sends every plain yank
+        let g:oscyank_silent = 1
+        autocmd TextYankPost * if v:event.operator is 'y' && v:event.regname is ''
+            \ | execute 'OSCYankRegister "' | endif
+    endif
+endif
 set wildmenu
 set wildmode=longest:full,full
 set scrolloff=8

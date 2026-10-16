@@ -68,6 +68,7 @@ need `dfu`.
 | `~/.config/nvim/init.vim` | `nvim/init.vim` |
 | `~/.tmux.conf` | `tmux/tmux.conf` |
 | `~/bin/*` | `bin/*` (utility scripts) |
+| `~/.config/wezterm/wezterm.lua` | `wezterm/wezterm.lua` — only if `wezterm` is on PATH (Omarchy keeps its own terminal) |
 | `~/.config/git/config` | generated — includes `git/gitconfig` + user identity |
 
 vim-plug and plugins are auto-installed for both vim and neovim.
@@ -158,6 +159,7 @@ On Omarchy the prompt is left to Omarchy (it re-themes on `omarchy theme set`); 
 | PowerShell profile (PS5 + PS7) | `windows/Microsoft.PowerShell_profile.ps1` |
 | `~/_vimrc` | `vim/vimrc` |
 | `%LOCALAPPDATA%\nvim\init.vim` | `nvim/init.vim` |
+| `~/.wezterm.lua` | `wezterm/wezterm.lua` — linked even when WezTerm is not installed; inert otherwise |
 | `~/.gitconfig` | generated — includes `git/gitconfig` + user identity |
 
 Also installs: oh-my-posh, FiraCode Nerd Font, vim-plug and plugins.
@@ -219,6 +221,8 @@ dotfiles/
 │   └── init.vim                # Sources shared vimrc
 ├── tmux/
 │   └── tmux.conf               # Omarchy keybinding scheme, ported for non-Omarchy
+├── wezterm/
+│   └── wezterm.lua             # One config for Windows + Linux, branches on target_triple
 ├── git/
 │   └── gitconfig               # Shared git config (colors, aliases — no user block)
 ├── bin/
@@ -373,8 +377,10 @@ sequence that the *terminal* turns into a clipboard write, which means:
 
 | Terminal | Status |
 |----------|--------|
-| Alacritty | Needs `[terminal] osc52 = "CopyPaste"` — Omarchy sets this; add it on a non-Omarchy install |
+| Alacritty | Works by default (`osc52 = "OnlyCopy"` is the default; `"CopyPaste"` only adds paste, which terminals block on purpose) |
 | Ghostty | Works by default (`clipboard-write = allow`) |
+| WezTerm | Works by default |
+| Windows Terminal | Works by default |
 | Kitty | Works by default |
 | foot | Works by default |
 | VTE-based (GNOME Terminal, Tilix) | Needs VTE >= 0.72 |
@@ -401,6 +407,41 @@ broken bindings.
 To re-sync after an Omarchy update changes the upstream bindings, diff against
 `/usr/share/omarchy/config/tmux/tmux.conf`.
 
+## WezTerm
+
+`wezterm/wezterm.lua` is one config for Windows and Linux (it branches on
+`wezterm.target_triple`). On Windows it is the terminal, since tmux cannot run
+there natively; on Linux it is only linked if `wezterm` is on PATH.
+
+**The key scheme is the tmux scheme above**, so muscle memory carries over:
+`Alt+Enter` / `Alt+Shift+Enter` split, `Alt+Escape` kills the pane,
+`Ctrl+Alt+arrows` focus, `Ctrl+Alt+Shift+arrows` resize, `Alt+1..9` and
+`Alt+Left/Right` switch tabs (tmux windows), `Alt+Up/Down` switch workspaces
+(tmux sessions). `Ctrl+Space` is the prefix with the same table: `h` `v` `x`
+panes, `c` `r` `k` tabs, `C` `R` `K` `P` `N` workspaces, `q` reload.
+
+Every one of those keys is *smart*: in a local shell it performs the WezTerm
+action; when the pane is running `ssh`, `wsl` or `mosh`, or lives in an SSH/WSL
+domain, the key is passed through untouched so the **remote tmux** receives it.
+`Ctrl+Space Ctrl+Space` sends a literal prefix, exactly like tmux's
+`send-prefix`. Detection uses `pane:get_foreground_process_name()`, which on
+Windows reports the newest process under the pane, and returns nothing for
+multiplexer panes.
+
+Not in tmux: `Ctrl+Shift+H` quick-select (hashes, IPs, pod names),
+`Ctrl+Shift+Alt+L` launcher (shells, WSL distros, SSH hosts, workspaces),
+`Ctrl+Shift+X` copy mode with `v`/`y` like `copy-mode-vi`.
+`Ctrl+Shift+Space` is released to 1Password.
+
+**Copy & paste** works like Windows Terminal: mouse selection copies straight to
+the clipboard, right click copies the selection if there is one and pastes
+otherwise, `Ctrl+Shift+C` / `Ctrl+Shift+V` and `Shift+Insert` do the obvious.
+Plain `Ctrl+C` is always an interrupt. Hold `Shift` while selecting inside tmux,
+k9s or anything else with mouse reporting on. `Ctrl+Shift+X` enters copy mode
+(`v` select, `y` yank, `q` leave). Yanking in a *remote* tmux or nvim lands in
+the local clipboard via OSC 52 with nothing to configure; paste into the remote
+with the normal paste keys — bracketed paste keeps multi-line pastes safe.
+
 ## Vim features
 
 **Leader is `Space`** (local leader `\\`) on both sides — LazyVim's default on the
@@ -419,6 +460,17 @@ normal mode.
 - Smart case search
 - Mouse support
 - `jj` to escape insert mode
+- **Colours** — `habamax` (bundled with Vim 9 / Neovim 0.8+, `desert` fallback),
+  `background=dark`, true colour when `COLORTERM=truecolor`. Set explicitly
+  because the `default` scheme guesses the background from the terminal and
+  produces unreadable pairs such as red on pink in sshconfig files.
+- **Yank over ssh/tmux lands in the local clipboard** — on a server there is no
+  X11/Wayland, so `unnamedplus` alone keeps yanks inside Vim. When `$SSH_TTY` or
+  `$TMUX` is set the `+`/`*` registers go through OSC 52: Vim ≥ 9.1.1984 uses
+  the bundled `osc52` package (`clipmethod=wayland,x11,osc52`), older Vims get
+  `vim-oscyank`. OSC 52 *paste* is off because terminals block clipboard reads;
+  paste with the terminal's own paste key. Neovim ≥ 0.10 handles this itself.
+  Mouse drag selects in Vim (`mouse=a`); hold `Shift` to select in the terminal.
 
 ## Zsh plugins
 

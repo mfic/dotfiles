@@ -317,6 +317,12 @@ if [ "$OMARCHY" = false ] && command -v nvim &>/dev/null; then
     fi
 fi
 
+# WezTerm — only where it is installed, so Omarchy's own terminal is left alone.
+if command -v wezterm &>/dev/null; then
+    mkdir -p "$HOME/.config/wezterm"
+    link_file "$DOTFILES_DIR/wezterm/wezterm.lua" "$HOME/.config/wezterm/wezterm.lua"
+fi
+
 # Omarchy desktop layer — Arch + Hyprland + Omarchy shell only.
 if [ "$OMARCHY" = true ]; then
     echo ""

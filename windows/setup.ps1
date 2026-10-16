@@ -140,6 +140,12 @@ $NvimSource = Join-Path $RepoRoot "nvim\init.vim"
 $NvimDest   = Join-Path $NvimDir "init.vim"
 Link-File -Source $NvimSource -Destination $NvimDest -Label "nvim/init.vim"
 
+# WezTerm config (same file as Linux; branches on wezterm.target_triple).
+# Linked regardless of whether WezTerm is installed -- the file is inert otherwise.
+$WezSource = Join-Path $RepoRoot "wezterm/wezterm.lua"
+$WezDest   = Join-Path $env:USERPROFILE ".wezterm.lua"
+Link-File -Source $WezSource -Destination $WezDest -Label ".wezterm.lua"
+
 # Git config — prompt for user identity, generate .gitconfig with include
 if ($SkipGit) {
     Write-Host "[info] Skipping git configuration (-SkipGit)" -ForegroundColor Cyan

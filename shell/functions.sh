@@ -248,6 +248,13 @@ dotfiles-check() {
         [ "$(cat "$HOME/.dotfiles_profile")" = "workstation" ] && \
         links+=("$HOME/.zshrc:$dir/shell/zshrc")
 
+    if command -v wezterm &>/dev/null; then
+        case "$(uname -s)" in
+            MINGW*|MSYS*|CYGWIN*) links+=("$HOME/.wezterm.lua:$dir/wezterm/wezterm.lua") ;;
+            *) links+=("$cfg/wezterm/wezterm.lua:$dir/wezterm/wezterm.lua") ;;
+        esac
+    fi
+
     local entry dest want actual
     for entry in "${links[@]}"; do
         dest="${entry%%:*}"
