@@ -88,16 +88,42 @@ if (-not (Get-Command oh-my-posh -ErrorAction SilentlyContinue)) {
     Write-Host "oh-my-posh installed. You may need to restart your terminal." -ForegroundColor Green
 }
 
-# Install FiraCode Nerd Font
-if (Get-Command oh-my-posh -ErrorAction SilentlyContinue) {
-    Write-Host "Installing FiraCode Nerd Font..." -ForegroundColor Yellow
+# Install FiraCode Nerd Font, only when missing. Overwriting font files that
+# open terminals hold corrupts the Windows font cache.
+function Test-FiraCodeInstalled {
+    foreach ($Key in @(
+        "HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts",
+        "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Fonts"
+    )) {
+        $Props = Get-ItemProperty $Key -ErrorAction SilentlyContinue
+        if ($Props -and ($Props.PSObject.Properties.Name -like "FiraCode Nerd Font*")) { return $true }
+    }
+    foreach ($Dir in @(
+        (Join-Path $env:LOCALAPPDATA "Microsoft\Windows\Fonts"),
+        (Join-Path $env:WINDIR "Fonts")
+    )) {
+        if (Test-Path (Join-Path $Dir "FiraCodeNerdFont-Regular.ttf")) { return $true }
+    }
+    return $false
+}
+
+if (Test-FiraCodeInstalled) {
+    Write-Host "FiraCode Nerd Font already installed" -ForegroundColor Green
+} elseif (Get-Command oh-my-posh -ErrorAction SilentlyContinue) {
+    Write-Host "Installing FiraCode Nerd Font. Close other terminals first, fonts in use can corrupt the font cache." -ForegroundColor Yellow
     oh-my-posh font install FiraCode
     Write-Host "FiraCode Nerd Font installed" -ForegroundColor Green
 }
 
 # Set FiraCode Nerd Font as default in Windows Terminal
 $WtSettingsPath = Join-Path $env:LOCALAPPDATA "Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json"
+$WtFace = $null
 if (Test-Path $WtSettingsPath) {
+    $WtFace = (Get-Content $WtSettingsPath -Raw | ConvertFrom-Json).profiles.defaults.font.face
+}
+if ($WtFace -eq "FiraCode Nerd Font") {
+    Write-Host "Windows Terminal already uses FiraCode Nerd Font" -ForegroundColor Green
+} elseif (Test-Path $WtSettingsPath) {
     $WtBackup = "$WtSettingsPath.bak.$(Get-Date -Format 'yyyyMMddHHmmss')"
     Copy-Item $WtSettingsPath $WtBackup
     $script:Backups += $WtBackup
