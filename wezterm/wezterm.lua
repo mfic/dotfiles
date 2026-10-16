@@ -32,6 +32,9 @@ if is_windows then
     { label = 'Git Bash',               args = { 'C:/Program Files/Git/bin/bash.exe', '--login', '-i' } },
   }
   -- WSL distros (Ubuntu, archlinux, ...) appear automatically as WSL:<name> domains.
+  -- WezTerm otherwise points SSH_AUTH_SOCK at its own agent proxy, which Windows
+  -- OpenSSH cannot use; unset, ssh falls back to the 1Password openssh-ssh-agent pipe.
+  config.mux_enable_ssh_agent = false
 end
 
 -- SSH: keep the SSH:/SSHMUX: domains auto-generated from ~/.ssh/config.
