@@ -46,8 +46,18 @@ set laststatus=2
 " source of unreadable pairs like red on pink in sshconfig files. habamax ships
 " with Vim 9 and Neovim 0.8+; desert is the fallback for anything older.
 set background=dark
-if has('termguicolors') && ($COLORTERM ==# 'truecolor' || $COLORTERM ==# '24bit')
+" Native Windows Vim: Windows Terminal never sets COLORTERM, yet every
+" Windows 10+ console (vcon) takes 24-bit colour. Without this it drops to
+" the 16-colour console, where habamax's underlined CursorLine renders red.
+if has('termguicolors') && ($COLORTERM ==# 'truecolor' || $COLORTERM ==# '24bit'
+            \ || (has('win32') && has('vcon') && !has('gui_running')))
     set termguicolors
+endif
+" Windows console: scroll by redrawing instead of shifting lines through
+" ConPTY, which leaves stale CursorLine/background fragments behind when
+" scrolling up.
+if has('win32') && !has('gui_running')
+    set ttyscroll=0
 endif
 silent! colorscheme habamax
 if !exists('g:colors_name') || g:colors_name !=# 'habamax'
